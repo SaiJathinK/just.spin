@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { searchPlaces, getPlaceDetails, getPlacePhoto, getPlacePhotos } from "../services/places";
+import { useAuth } from "../context/AuthContext";
 
 const glassCard = {
   background: "rgba(255,255,255,0.05)",
@@ -15,30 +16,38 @@ const cyan = "linear-gradient(to right, #06B6D4, #0891b2)";
 const cityData = {
   Bengaluru: {
     images: [
-      "https://images.unsplash.com/photo-1580667242482-517b21b04b70?w=2600&q=95&fit=crop&dpr=2&auto=format", // Vidhana Soudha
+      "https://images.unsplash.com/photo-1580714234233-2b3fc19c6fd0?w=2600&q=95&fit=crop&dpr=2&auto=format", // Bangalore cityscape
       "https://images.unsplash.com/photo-1580017830165-98fb8112ab98?w=2600&q=95&fit=crop&dpr=2&auto=format", // Bangalore Palace
       "https://images.unsplash.com/photo-1596176530529-78163a4f7af2?w=2600&q=95&fit=crop&dpr=2&auto=format", // Bangalore skyline
       "https://images.unsplash.com/photo-1600100397608-f7febcf6db86?w=2600&q=95&fit=crop&dpr=2&auto=format", // Cubbon Park / Lalbagh greenery
     ],
     tagline: "Silicon Valley of India",
+    spotCount: 340,
+    locked: false,
   },
   Chennai: {
     images: [
       "https://images.unsplash.com/photo-1582651957983-56e9d6062e1c?w=2200&q=92&fit=crop&dpr=2&auto=format",
     ],
     tagline: "Gateway of South India",
+    spotCount: 0,
+    locked: true,
   },
   Hyderabad: {
     images: [
       "https://images.unsplash.com/photo-1533461502717-83546f485d24?w=2200&q=92&fit=crop&dpr=2&auto=format",
     ],
     tagline: "City of Nizams",
+    spotCount: 0,
+    locked: true,
   },
   Goa: {
     images: [
       "https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?w=2200&q=92&fit=crop&dpr=2&auto=format",
     ],
     tagline: "Pearl of the Orient",
+    spotCount: 0,
+    locked: true,
   },
 };
 
@@ -322,12 +331,6 @@ function PlanModal({ plan, onClose }) {
   }, [plan.id]);
 
   const validStops = plan.stops.filter((s) => stopData[s.place]?.lat);
-  const allLats = validStops.map(s => stopData[s.place].lat);
-  const allLngs = validStops.map(s => stopData[s.place].lng);
-  const avgLat = allLats.length > 0 ? allLats.reduce((a, b) => a + b, 0) / allLats.length : 12.9716;
-  const avgLng = allLngs.length > 0 ? allLngs.reduce((a, b) => a + b, 0) / allLngs.length : 77.5946;
-  const markerParams = validStops.map((s, i) => `markers=color:0x2563EB%7Clabel:${i + 1}%7C${stopData[s.place].lat},${stopData[s.place].lng}`).join("&");
-  const staticMapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${avgLat},${avgLng}&zoom=13&size=600x300&maptype=roadmap&${markerParams}&path=color:0x2563EB80%7Cweight:3%7C${validStops.map(s => `${stopData[s.place].lat},${stopData[s.place].lng}`).join("%7C")}&key=${process.env.REACT_APP_GOOGLE_PLACES_KEY}`;
   const routeUrl = validStops.length > 0 ? `https://www.google.com/maps/dir/${validStops.map(s => `${stopData[s.place].lat},${stopData[s.place].lng}`).join("/")}` : "https://www.google.com/maps";
 
   return (
@@ -387,10 +390,7 @@ function PlanModal({ plan, onClose }) {
               <p className="text-white opacity-50 text-xs">All {plan.stops.length} stops</p>
             </div>
             {!loadingPhotos && validStops.length > 0 ? (
-              <div>
-                <img src={staticMapUrl} alt="Route map" className="w-full" />
-                <button onClick={() => window.open(routeUrl, "_blank")} className="w-full py-3 text-white font-bold text-sm" style={{ background: `${plan.color}30` }}>Open Full Route in Google Maps</button>
-              </div>
+              <button onClick={() => window.open(routeUrl, "_blank")} className="w-full py-3 text-white font-bold text-sm" style={{ background: `${plan.color}30` }}>Open Full Route in Google Maps</button>
             ) : (
               <div className="p-8 text-center"><p className="text-white opacity-40 text-sm">{loadingPhotos ? "Loading map..." : "Map unavailable"}</p></div>
             )}
@@ -431,19 +431,158 @@ function PlaceCard({ place, isSpinResult, onReview, onSpin, onGallery }) {
   );
 }
 
+// City center coordinates, used for live weather lookups.
+const CITY_COORDS = {
+  Bengaluru: { lat: 12.9716, lon: 77.5946 },
+  Chennai: { lat: 13.0827, lon: 80.2707 },
+  Hyderabad: { lat: 17.385, lon: 78.4867 },
+  Goa: { lat: 15.2993, lon: 74.124 },
+};
+
+// Rough mapping from Open-Meteo's weather codes to an emoji + label.
+function describeWeatherCode(code) {
+  if (code === 0) return { emoji: "☀️", label: "Clear" };
+  if ([1, 2].includes(code)) return { emoji: "🌤️", label: "Partly cloudy" };
+  if (code === 3) return { emoji: "☁️", label: "Cloudy" };
+  if ([45, 48].includes(code)) return { emoji: "🌫️", label: "Foggy" };
+  if ([51, 53, 55, 56, 57].includes(code)) return { emoji: "🌦️", label: "Drizzle" };
+  if ([61, 63, 65, 66, 67, 80, 81, 82].includes(code)) return { emoji: "🌧️", label: "Rainy" };
+  if ([71, 73, 75, 77, 85, 86].includes(code)) return { emoji: "❄️", label: "Snow" };
+  if ([95, 96, 99].includes(code)) return { emoji: "⛈️", label: "Storm" };
+  return { emoji: "🌡️", label: "—" };
+}
+
+function WeatherBox({ cityName }) {
+  const [weather, setWeather] = useState(null); // { tempC, emoji, label } | "error" | null (loading)
+  const coords = CITY_COORDS[cityName] || CITY_COORDS.Bengaluru;
+
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchWeather() {
+      try {
+        const res = await fetch(
+          `https://api.open-meteo.com/v1/forecast?latitude=${coords.lat}&longitude=${coords.lon}&current_weather=true`
+        );
+        const data = await res.json();
+        const cw = data?.current_weather;
+        if (!cancelled && cw) {
+          setWeather({ tempC: Math.round(cw.temperature), ...describeWeatherCode(cw.weathercode) });
+        } else if (!cancelled) {
+          setWeather("error");
+        }
+      } catch (err) {
+        console.warn("WeatherBox: fetch failed", err);
+        if (!cancelled) setWeather("error");
+      }
+    }
+    fetchWeather();
+    // Refresh every 30 minutes so the reading doesn't go stale on a long-open tab.
+    const interval = setInterval(fetchWeather, 30 * 60 * 1000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [coords.lat, coords.lon]);
+
+  return (
+    <div className="rounded-2xl p-4 flex flex-col justify-center" style={{ ...glassCard, border: "2px solid #06B6D4" }}>
+      <p className="text-xs font-bold uppercase tracking-widest mb-1" style={{ color: "#06B6D4" }}>Weather</p>
+      {weather === null && <div className="h-6 w-20 rounded bg-white/10 animate-pulse mt-1" />}
+      {weather === "error" && <p className="text-white opacity-50 text-sm">Unavailable</p>}
+      {weather && weather !== "error" && (
+        <p className="text-white font-black text-lg leading-tight">
+          {weather.emoji} {weather.tempC}°C
+          <span className="block text-xs font-semibold opacity-60">{weather.label}</span>
+        </p>
+      )}
+    </div>
+  );
+}
+
+const CITY_FACTS = {
+  Bengaluru: [
+    "Bengaluru is called the Garden City for its many parks and green cover.",
+    "Cubbon Park was laid out in 1870 and covers about 300 acres in the city center.",
+    "Bengaluru sits at roughly 900m elevation, giving it a cooler climate than most Indian cities.",
+    "The city is home to India's first science museum, the Visvesvaraya Industrial and Technological Museum.",
+    "Lalbagh Botanical Garden's Glass House was inspired by London's Crystal Palace.",
+    "Bengaluru was founded in 1537 by the chieftain Kempe Gowda I under the Vijayanagara Empire.",
+    "The city's old name, Bendakaluru, means 'town of boiled beans' from a local legend about a king served beans by an elderly woman.",
+    "Bengaluru was the first Indian city to get electric street lighting, switched on at K.R. Market in 1905.",
+    "In 1965, workers building a runway at the old HAL airport uncovered a pot of 256 ancient Roman silver coins.",
+    "Bengaluru is nicknamed the 'Pub Capital of India', with several hundred pubs and bars across the city.",
+    "Rava idli, a popular South Indian breakfast dish, was invented at Bengaluru's MTR restaurant during a rice shortage.",
+    "The city was once home to well over a thousand lakes; only a few dozen remain today after decades of urban growth.",
+    "Bengaluru is headquarters to India's space agency ISRO, founded in 1969.",
+    "Evidence shows the Bengaluru area has been inhabited since as far back as 4000 BCE, despite having no major river nearby.",
+    "Bengaluru was the first Indian city to offer free public Wi-Fi, known as Namma Wi-Fi.",
+  ],
+};
+
+function FactsBox({ cityName }) {
+  const facts = CITY_FACTS[cityName] || CITY_FACTS.Bengaluru;
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIndex((i) => (i + 1) % facts.length);
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [facts.length]);
+
+  return (
+    <div className="rounded-2xl p-4 flex flex-col justify-center" style={glassCard}>
+      <p className="text-xs font-bold uppercase tracking-widest mb-1" style={{ color: "#06B6D4" }}>Did you know?</p>
+      <p className="text-white text-xs leading-snug opacity-70">{facts[index]}</p>
+    </div>
+  );
+}
+
 export default function CityPage() {
   const { cityName } = useParams();
   const navigate = useNavigate();
+  const { user, authLoading, login, logout } = useAuth();
   const city = cityData[cityName] || cityData.Bengaluru;
   const plans = cityPlans[cityName] || [];
 
-  const [currentImage, setCurrentImage] = useState(0);
-  const [fade, setFade] = useState(true);
   const [mode, setMode] = useState("spin");
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [foodVeg, setFoodVeg] = useState(null);
   const [foodCuisine, setFoodCuisine] = useState(null);
   const [selectedBudget, setSelectedBudget] = useState(null);
+
+  // Ref for the "Where do you want to go?" filter panel — used to smooth-scroll
+  // into view when a Hero Card shortcut (like the category tag) is clicked.
+  const filterPanelRef = useRef(null);
+  // Briefly true right after a shortcut pre-selects chips, so we can pulse/highlight
+  // them and make it obvious to the user what just changed.
+  const [justHighlighted, setJustHighlighted] = useState(false);
+
+  // Reusable shortcut handler — pre-selects the given categories (reusing the
+  // exact same setSelectedCategories state the manual chip clicks already use,
+  // so there's no duplicated filtering logic anywhere), then smooth-scrolls
+  // the filter panel into view and triggers a brief highlight pulse.
+  function quickExplore(categoryLabels) {
+    setMode("spin");
+    setSelectedCategories(categoryLabels.slice(0, 3)); // respect the existing 3-category cap
+    setJustHighlighted(true);
+
+    // Smooth scroll to the filter panel, positioned comfortably near the top
+    filterPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+
+    // Clear the highlight pulse after the animation has had time to play
+    setTimeout(() => setJustHighlighted(false), 1600);
+  }
+
+  // Called when a circular spot thumbnail is clicked — uses that place as a
+  // "near" seed for a fresh spin. Reuses handleSpin's existing area-override
+  // param (searchCity becomes "<placeName> <cityName>"), so Google's own
+  // text-search relevance does the "find things near this place" work —
+  // no new proximity/geo code needed here.
+  function spinNearPlace(placeName) {
+    setMode("spin");
+    filterPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    handleSpin(placeName);
+  }
+
+
   const [selectedLocation, setSelectedLocation] = useState("Anywhere in Bangalore");
   const [results, setResults] = useState([]);
   const [searched, setSearched] = useState(false);
@@ -454,25 +593,16 @@ export default function CityPage() {
   const [galleryPlace, setGalleryPlace] = useState(null);
   const [selectedPlan, setSelectedPlan] = useState(null);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setFade(false);
-      setTimeout(() => {
-        setCurrentImage((prev) => (prev + 1) % city.images.length);
-        setFade(true);
-      }, 500);
-    }, 10000);
-    return () => clearInterval(interval);
-  }, [city.images.length]);
+
 
   const categories = [
-    { label: "Adventure", emoji: "🏕️" },
     { label: "Nature", emoji: "🌿" },
-    { label: "Spiritual", emoji: "🛕" },
     { label: "Food", emoji: "🍽️" },
     { label: "Heritage", emoji: "🏛️" },
-    { label: "Entertainment", emoji: "🎮" },
     { label: "Experiences", emoji: "🍷" },
+    { label: "Adventure", emoji: "🏕️", locked: true },
+    { label: "Spiritual", emoji: "🛕", locked: true },
+    { label: "Entertainment", emoji: "🎮", locked: true },
   ];
 
   const budgets = ["Under 1000", "1000-2500", "2500+"];
@@ -538,11 +668,13 @@ export default function CityPage() {
     } catch (e) { setResults([]); } finally { setLoading(false); }
   };
 
-  const handleSpin = async () => {
+  const handleSpin = async (areaOverride = null) => {
     setSpinning(true); setSpinResult(null); setSearched(false); setResults([]); setSelectedPlan(null);
     try {
-      const searchCity = selectedLocation === "Anywhere in Bangalore" ? cityName : selectedLocation + " " + cityName;
-      const areaLabel = selectedLocation === "Anywhere in Bangalore" ? cityName : selectedLocation;
+      const searchCity = areaOverride
+        ? `${areaOverride} ${cityName}`
+        : (selectedLocation === "Anywhere in Bangalore" ? cityName : selectedLocation + " " + cityName);
+      const areaLabel = areaOverride || (selectedLocation === "Anywhere in Bangalore" ? cityName : selectedLocation);
       const foodFilters = { veg: foodVeg, cuisine: foodCuisine };
 
       if (selectedCategories.length >= 2) {
@@ -617,7 +749,7 @@ export default function CityPage() {
         }
       }
 
-      const cats = ["Food", "Nature", "Adventure", "Heritage", "Spiritual", "Entertainment", "Experiences"];
+      const cats = ["Food", "Nature", "Heritage", "Experiences"];
       const randomCat = selectedCategories[0] || cats[Math.floor(Math.random() * cats.length)];
       const { list, forced } = await getCategoryCandidates(randomCat, selectedBudget, searchCity, cityName, foodFilters);
       if (forced) {
@@ -637,47 +769,55 @@ export default function CityPage() {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: "#0F172A" }}>
+    <div className="min-h-screen pb-24" style={{ background: "#0F172A" }}>
 
-      {/* Hero */}
-      <div className="relative" style={{ height: "40vh", minHeight: "280px" }}>
-        <div
-          className="absolute inset-0 transition-opacity duration-500"
-          style={{ backgroundImage: `url(${city.images[currentImage]})`, backgroundSize: "cover", backgroundPosition: "center", opacity: fade ? 1 : 0 }}
-        />
-        <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, rgba(15,23,42,1) 100%)" }} />
-
-        {/* Top nav - matches Home page layout */}
-        <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-6 sm:px-12 py-5 z-10">
-          <button onClick={() => navigate("/")} className="text-white opacity-80 hover:opacity-100 text-base sm:text-lg font-medium transition-all whitespace-nowrap">
+      {/* Navbar */}
+      <div className="px-4 pt-4">
+        <nav className="relative flex items-center justify-between px-4 sm:px-12 py-3 sm:py-5 bg-white rounded-full shadow-lg">
+          <button onClick={() => navigate("/")} className="text-black font-medium text-sm sm:text-lg hover:opacity-60 transition-opacity whitespace-nowrap">
             ← Back
           </button>
-          <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
-            <span className="text-white font-black text-3xl sm:text-2xl tracking-tight whitespace-nowrap">JustSpin</span>
-          </div>
-          <button className="bg-white text-gray-900 font-bold text-sm sm:text-base px-3 sm:px-5 py-2 sm:py-2.5 rounded-full hover:shadow-lg transition-all whitespace-nowrap">
-            Sign up
-          </button>
-        </div>
-
-        {/* City name overlay */}
-        <div className="absolute bottom-0 left-0 right-0 px-4 sm:px-8 pb-6 z-10">
-          <h1 className="text-4xl sm:text-5xl font-black text-white mb-1">{cityName}</h1>
-          <p className="text-white opacity-60 text-sm">{city.tagline}</p>
-        </div>
-
-        {/* Image dots */}
-        {city.images.length > 1 && (
-          <div className="absolute bottom-4 right-4 flex gap-1.5 z-10">
-            {city.images.map((_, i) => (
-              <div key={i} className="w-1.5 h-1.5 rounded-full" style={{ background: i === currentImage ? "white" : "rgba(255,255,255,0.4)" }} />
-            ))}
-          </div>
-        )}
+          <span className="absolute left-1/2 -translate-x-1/2 text-black font-black text-lg sm:text-2xl md:text-3xl uppercase tracking-[0.1em] sm:tracking-[0.15em] whitespace-nowrap">
+            Just Spin
+          </span>
+          {authLoading ? null : user ? (
+            <button
+              onClick={logout}
+              className="flex items-center gap-2 bg-black text-white font-bold text-xs sm:text-base px-3 sm:px-4 py-2 sm:py-2.5 rounded-full hover:opacity-80 transition-all whitespace-nowrap"
+              title="Click to log out"
+            >
+              {user.photoURL ? (
+                <img src={user.photoURL} alt={user.displayName || "User"} className="w-6 h-6 sm:w-7 sm:h-7 rounded-full" referrerPolicy="no-referrer" />
+              ) : (
+                <span className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gray-700 flex items-center justify-center text-xs">
+                  {(user.displayName || user.email || "U")[0].toUpperCase()}
+                </span>
+              )}
+              <span className="hidden sm:inline">{user.displayName?.split(" ")[0] || "Account"}</span>
+            </button>
+          ) : (
+            <button
+              onClick={login}
+              className="bg-black text-white font-bold text-xs sm:text-base px-4 sm:px-6 py-2 sm:py-2.5 rounded-full hover:opacity-80 transition-all whitespace-nowrap"
+            >
+              Sign in
+            </button>
+          )}
+        </nav>
       </div>
 
       {/* Content */}
-      <div className="max-w-2xl mx-auto px-4 pb-12">
+      <div className="flex justify-center px-4 pt-8 pb-12">
+        <div className="w-full max-w-2xl">
+
+        {/* CENTER — your existing content, unchanged */}
+        <div className="w-full">
+
+        {/* Weather + Did you know */}
+        <div className="grid grid-cols-2 gap-3 my-4">
+          <WeatherBox cityName={cityName} />
+          <FactsBox cityName={cityName} />
+        </div>
 
         {/* Toggle */}
         <div className="flex gap-2 p-1 rounded-full my-4" style={glassCard}>
@@ -728,7 +868,7 @@ export default function CityPage() {
               </div>
             )}
 
-            <div className="rounded-2xl p-4 mb-3" style={glassCard}>
+            <div ref={filterPanelRef} className="rounded-2xl p-4 mb-3" style={glassCard}>
               <div className="flex items-center justify-between mb-3">
                 <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "#06B6D4" }}>Where do you want to go?</p>
                 <p className="text-white opacity-40 text-xs font-medium">Pick 1-3</p>
@@ -737,11 +877,13 @@ export default function CityPage() {
                 {categories.map((cat) => {
                   const isSelected = selectedCategories.includes(cat.label);
                   const atLimit = selectedCategories.length >= 3 && !isSelected;
+                  const disabled = cat.locked || atLimit;
                   return (
                     <button
                       key={cat.label}
-                      disabled={atLimit}
+                      disabled={disabled}
                       onClick={() => {
+                        if (cat.locked) return;
                         if (isSelected) {
                           setSelectedCategories(selectedCategories.filter((c) => c !== cat.label));
                           if (cat.label === "Food") { setFoodVeg(null); setFoodCuisine(null); }
@@ -749,10 +891,16 @@ export default function CityPage() {
                           setSelectedCategories([...selectedCategories, cat.label]);
                         }
                       }}
-                      className={isSelected ? pillActive : pillBase}
-                      style={{ ...(isSelected ? { background: blue } : {}), opacity: atLimit ? 0.3 : undefined }}
+                      className={`${isSelected ? pillActive : pillBase} transition-all duration-300`}
+                      style={{
+                        ...(isSelected ? { background: blue } : {}),
+                        opacity: cat.locked ? 0.35 : (atLimit ? 0.3 : undefined),
+                        cursor: cat.locked ? "not-allowed" : undefined,
+                        boxShadow: isSelected && justHighlighted ? "0 0 0 3px rgba(6,182,212,0.6)" : "none",
+                        transform: isSelected && justHighlighted ? "scale(1.05)" : "scale(1)",
+                      }}
                     >
-                      {cat.emoji} {cat.label}
+                      {cat.emoji} {cat.label}{cat.locked ? " 🔒 Soon" : ""}
                     </button>
                   );
                 })}
@@ -813,7 +961,7 @@ export default function CityPage() {
             </div>
 
             <div className="flex flex-col gap-3 mb-6">
-              <button onClick={handleSpin} disabled={spinning} className="w-full py-4 rounded-2xl text-white font-black text-sm tracking-widest uppercase" style={{ background: cyan }}>
+              <button onClick={() => handleSpin()} disabled={spinning} className="w-full py-4 rounded-2xl text-white font-black text-sm tracking-widest uppercase" style={{ background: cyan }}>
                 {spinning ? "Spinning..." : "Spin The Wheel"}
               </button>
               <button onClick={handleFind} disabled={loading} className="w-full py-4 rounded-2xl text-white font-black text-sm tracking-widest uppercase" style={{ background: blue }}>
@@ -862,11 +1010,22 @@ export default function CityPage() {
         )}
 
         <div className="text-center pt-10 text-white opacity-20 text-xs">Built with React and Tailwind</div>
+        </div>
+
+        </div>
       </div>
 
       {reviewPlace && <ReviewModal place={reviewPlace} onClose={() => setReviewPlace(null)} />}
       {galleryPlace && <PhotoGallery place={galleryPlace} onClose={() => setGalleryPlace(null)} />}
       {selectedPlan && <PlanModal plan={selectedPlan} onClose={() => setSelectedPlan(null)} />}
+
+      {/* Bottom nav bar */}
+      <div className="fixed bottom-0 left-0 right-0 flex items-center justify-center gap-6 sm:gap-10 py-4 z-40" style={{ background: "#000000", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
+        <button aria-label="Home" onClick={() => navigate("/")} className="w-11 h-11 rounded-full flex items-center justify-center text-lg" style={{ background: blue }}>🏠</button>
+        <button aria-label="Discover" onClick={() => setMode("discover")} className="w-11 h-11 rounded-full flex items-center justify-center text-lg" style={{ background: blue }}>🧭</button>
+        <button aria-label="Favorites" className="w-11 h-11 rounded-full flex items-center justify-center text-lg" style={{ background: blue }}>❤️</button>
+        <button aria-label="Profile" onClick={() => (user ? logout() : login())} className="w-11 h-11 rounded-full flex items-center justify-center text-lg" style={{ background: blue }}>👤</button>
+      </div>
     </div>
   );
 }

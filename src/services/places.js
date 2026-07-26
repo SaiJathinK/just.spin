@@ -1,10 +1,10 @@
 const categoryToKeyword = {
-  Adventure: "trekking ATV kayaking paragliding go-karting adventure sports",
+  Adventure: ["trekking trails", "ATV off-roading", "kayaking", "paragliding", "go-karting", "adventure sports camp"],
   Nature: "parks gardens zoo wildlife sanctuary lakes",
-  Spiritual: "temples churches gurudwara mosque jain temple monastery",
+  Spiritual: ["hindu temple", "church", "gurudwara", "mosque", "jain temple", "buddhist monastery"],
   Food: "restaurants cafes pubs breweries dhaba street food",
   Heritage: "historical monuments museums art galleries forts palaces",
-  Entertainment: "gaming arcade bowling VR escape room entertainment",
+  Entertainment: ["gaming arcade", "bowling alley", "VR gaming zone", "escape room"],
   Experiences: "wine tour farm stay play arena unique experiences",
 };
 
@@ -58,54 +58,75 @@ export async function getPlaceDetails(placeId) {
   }
 }
 
+const shapePlace = (place, category, budget, location) => ({
+  name: place.name,
+  type: category,
+  category: category,
+  budget: budget || "Under ₹1000",
+  emoji: getCategoryEmoji(category),
+  rating: place.rating || 4.0,
+  totalRatings: place.user_ratings_total || 0,
+  area: place.vicinity || place.formatted_address || location,
+  price: getPriceLabel(place.price_level),
+  lat: place.geometry?.location?.lat ?? null,
+  lng: place.geometry?.location?.lng ?? null,
+  photo: place.photos
+    ? `${BASE_URL}?type=photo&query=${place.photos[0].photo_reference}`
+    : null,
+  placeId: place.place_id,
+  mapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name)}&query_place_id=${place.place_id}`,
+});
+
+const runQuery = async (query) => {
+  try {
+    const response = await fetch(`${BASE_URL}?type=search&query=${encodeURIComponent(query)}`);
+    const data = await response.json();
+    console.log("Places response:", data);
+    return data.results || [];
+  } catch (error) {
+    console.error("Error fetching places:", error);
+    return [];
+  }
+};
+
 export async function searchPlaces(category, budget, city, near = false, foodFilters = {}) {
-  let keyword = categoryToKeyword[category] || "places";
+  const keywordEntry = categoryToKeyword[category] || "places";
+  const location = city || "Bengaluru";
+  const connector = near ? " near " : " in ";
+
+  // Categories with several distinct sub-keywords (e.g. Adventure covers trekking,
+  // kayaking, paragliding...) run one targeted search per sub-keyword in parallel
+  // and merge the results, instead of cramming everything into a single query —
+  // Google's Text Search doesn't do OR matching, so a crammed string tends to
+  // return a narrow or empty result set rather than good coverage.
+  if (Array.isArray(keywordEntry)) {
+    const rawLists = await Promise.all(
+      keywordEntry.map((kw) => runQuery(kw + connector + location))
+    );
+    const seen = new Map();
+    for (const list of rawLists) {
+      for (const place of list) {
+        if (place.business_status === "CLOSED_PERMANENTLY") continue;
+        if (!seen.has(place.place_id)) seen.set(place.place_id, place);
+      }
+    }
+    const merged = [...seen.values()].sort(
+      (a, b) => (b.rating || 0) * (b.user_ratings_total || 1) - (a.rating || 0) * (a.user_ratings_total || 1)
+    );
+    return merged.slice(0, 10).map((place) => shapePlace(place, category, budget, location));
+  }
+
+  let keyword = keywordEntry;
   if (category === "Food") {
     const { veg, cuisine } = foodFilters;
     if (cuisine && cuisineToKeyword[cuisine]) keyword = cuisineToKeyword[cuisine];
     if (veg === "Veg") keyword = "vegetarian " + keyword;
     else if (veg === "Non-Veg") keyword = "non-vegetarian " + keyword;
   }
-  const location = city || "Bengaluru";
-  const query = keyword + (near ? " near " : " in ") + location;
-
-  try {
-    const response = await fetch(
-      `${BASE_URL}?type=search&query=${encodeURIComponent(query)}`
-    );
-    const data = await response.json();
-
-    console.log("Places response:", data);
-
-    if (data.results && data.results.length > 0) {
-      const openPlaces = data.results.filter(
-        (place) => place.business_status !== "CLOSED_PERMANENTLY"
-      );
-      return openPlaces.slice(0, 10).map((place) => ({
-        name: place.name,
-        type: category,
-        category: category,
-        budget: budget || "Under ₹1000",
-        emoji: getCategoryEmoji(category),
-        rating: place.rating || 4.0,
-        totalRatings: place.user_ratings_total || 0,
-        area: place.vicinity || place.formatted_address || location,
-        price: getPriceLabel(place.price_level),
-        lat: place.geometry?.location?.lat ?? null,
-        lng: place.geometry?.location?.lng ?? null,
-        photo: place.photos
-          ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${place.photos[0].photo_reference}&key=${process.env.REACT_APP_GOOGLE_PLACES_KEY}`
-          : null,
-        placeId: place.place_id,
-        mapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name)}&query_place_id=${place.place_id}`,
-
-      }));
-    }
-    return [];
-  } catch (error) {
-    console.error("Error fetching places:", error);
-    return [];
-  }
+  const query = keyword + connector + location;
+  const results = await runQuery(query);
+  const openPlaces = results.filter((place) => place.business_status !== "CLOSED_PERMANENTLY");
+  return openPlaces.slice(0, 10).map((place) => shapePlace(place, category, budget, location));
 }
 
 export async function getPlacePhoto(placeName, city = "Bengaluru") {
