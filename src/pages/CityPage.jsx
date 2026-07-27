@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { searchPlaces, getPlaceDetails, getPlacePhoto, getPlacePhotos } from "../services/places";
 import { useAuth } from "../context/AuthContext";
@@ -456,7 +456,7 @@ function WeatherBox({ cityName }) {
   const [weather, setWeather] = useState(null); // { tempC, emoji, label } | "error" | null (loading)
   const coords = CITY_COORDS[cityName] || CITY_COORDS.Bengaluru;
 
-  useEffect(() => {
+  useState(() => {
     let cancelled = false;
     async function fetchWeather() {
       try {
@@ -476,18 +476,16 @@ function WeatherBox({ cityName }) {
       }
     }
     fetchWeather();
-    // Refresh every 30 minutes so the reading doesn't go stale on a long-open tab.
-    const interval = setInterval(fetchWeather, 30 * 60 * 1000);
-    return () => { cancelled = true; clearInterval(interval); };
-  }, [coords.lat, coords.lon]);
+    return () => { cancelled = true; };
+  }, [cityName]);
 
   return (
-    <div className="rounded-2xl p-4 flex flex-col justify-center" style={{ ...glassCard, border: "2px solid #06B6D4" }}>
-      <p className="text-xs font-bold uppercase tracking-widest mb-1" style={{ color: "#06B6D4" }}>Weather</p>
-      {weather === null && <div className="h-6 w-20 rounded bg-white/10 animate-pulse mt-1" />}
-      {weather === "error" && <p className="text-white opacity-50 text-sm">Unavailable</p>}
+    <div className="rounded-2xl p-4 flex flex-col justify-center border-2" style={{ background: "#F5C518", borderColor: "#06B6D4" }}>
+      <p className="text-xs font-bold uppercase tracking-widest mb-1 text-black opacity-70">Weather</p>
+      {weather === null && <div className="h-6 w-20 rounded bg-black/10 animate-pulse mt-1" />}
+      {weather === "error" && <p className="text-black opacity-50 text-sm">Unavailable</p>}
       {weather && weather !== "error" && (
-        <p className="text-white font-black text-lg leading-tight">
+        <p className="text-black font-black text-lg leading-tight">
           {weather.emoji} {weather.tempC}°C
           <span className="block text-xs font-semibold opacity-60">{weather.label}</span>
         </p>
@@ -503,16 +501,6 @@ const CITY_FACTS = {
     "Bengaluru sits at roughly 900m elevation, giving it a cooler climate than most Indian cities.",
     "The city is home to India's first science museum, the Visvesvaraya Industrial and Technological Museum.",
     "Lalbagh Botanical Garden's Glass House was inspired by London's Crystal Palace.",
-    "Bengaluru was founded in 1537 by the chieftain Kempe Gowda I under the Vijayanagara Empire.",
-    "The city's old name, Bendakaluru, means 'town of boiled beans' from a local legend about a king served beans by an elderly woman.",
-    "Bengaluru was the first Indian city to get electric street lighting, switched on at K.R. Market in 1905.",
-    "In 1965, workers building a runway at the old HAL airport uncovered a pot of 256 ancient Roman silver coins.",
-    "Bengaluru is nicknamed the 'Pub Capital of India', with several hundred pubs and bars across the city.",
-    "Rava idli, a popular South Indian breakfast dish, was invented at Bengaluru's MTR restaurant during a rice shortage.",
-    "The city was once home to well over a thousand lakes; only a few dozen remain today after decades of urban growth.",
-    "Bengaluru is headquarters to India's space agency ISRO, founded in 1969.",
-    "Evidence shows the Bengaluru area has been inhabited since as far back as 4000 BCE, despite having no major river nearby.",
-    "Bengaluru was the first Indian city to offer free public Wi-Fi, known as Namma Wi-Fi.",
   ],
 };
 
@@ -520,7 +508,7 @@ function FactsBox({ cityName }) {
   const facts = CITY_FACTS[cityName] || CITY_FACTS.Bengaluru;
   const [index, setIndex] = useState(0);
 
-  useEffect(() => {
+  useState(() => {
     const interval = setInterval(() => {
       setIndex((i) => (i + 1) % facts.length);
     }, 15000);
@@ -539,7 +527,6 @@ export default function CityPage() {
   const { cityName } = useParams();
   const navigate = useNavigate();
   const { user, authLoading, login, logout } = useAuth();
-  const city = cityData[cityName] || cityData.Bengaluru;
   const plans = cityPlans[cityName] || [];
 
   const [mode, setMode] = useState("spin");
@@ -554,34 +541,6 @@ export default function CityPage() {
   // Briefly true right after a shortcut pre-selects chips, so we can pulse/highlight
   // them and make it obvious to the user what just changed.
   const [justHighlighted, setJustHighlighted] = useState(false);
-
-  // Reusable shortcut handler — pre-selects the given categories (reusing the
-  // exact same setSelectedCategories state the manual chip clicks already use,
-  // so there's no duplicated filtering logic anywhere), then smooth-scrolls
-  // the filter panel into view and triggers a brief highlight pulse.
-  function quickExplore(categoryLabels) {
-    setMode("spin");
-    setSelectedCategories(categoryLabels.slice(0, 3)); // respect the existing 3-category cap
-    setJustHighlighted(true);
-
-    // Smooth scroll to the filter panel, positioned comfortably near the top
-    filterPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-
-    // Clear the highlight pulse after the animation has had time to play
-    setTimeout(() => setJustHighlighted(false), 1600);
-  }
-
-  // Called when a circular spot thumbnail is clicked — uses that place as a
-  // "near" seed for a fresh spin. Reuses handleSpin's existing area-override
-  // param (searchCity becomes "<placeName> <cityName>"), so Google's own
-  // text-search relevance does the "find things near this place" work —
-  // no new proximity/geo code needed here.
-  function spinNearPlace(placeName) {
-    setMode("spin");
-    filterPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    handleSpin(placeName);
-  }
-
 
   const [selectedLocation, setSelectedLocation] = useState("Anywhere in Bangalore");
   const [results, setResults] = useState([]);
@@ -772,39 +731,39 @@ export default function CityPage() {
     <div className="min-h-screen pb-24" style={{ background: "#0F172A" }}>
 
       {/* Navbar */}
-      <div className="px-4 pt-4">
-        <nav className="relative flex items-center justify-between px-4 sm:px-12 py-3 sm:py-5 bg-white rounded-full shadow-lg">
-          <button onClick={() => navigate("/")} className="text-black font-medium text-sm sm:text-lg hover:opacity-60 transition-opacity whitespace-nowrap">
-            ← Back
+      <nav className="relative flex items-center justify-between px-4 sm:px-12 py-3 sm:py-5" style={{ background: "#F5C518" }}>
+        <button onClick={() => navigate("/")} className="text-black font-medium text-sm sm:text-lg hover:opacity-60 transition-opacity whitespace-nowrap">
+          ← Back
+        </button>
+        <span className="absolute left-1/2 -translate-x-1/2 text-black font-black text-lg sm:text-2xl md:text-3xl uppercase tracking-[0.1em] sm:tracking-[0.15em] whitespace-nowrap">
+          Just Spin
+        </span>
+        {authLoading ? null : user ? (
+          <button
+            onClick={logout}
+            className="flex items-center gap-2 text-black font-bold text-xs sm:text-base px-3 sm:px-4 py-2 sm:py-2.5 rounded-full hover:opacity-80 transition-all whitespace-nowrap"
+            style={{ background: "#F97316" }}
+            title="Click to log out"
+          >
+            {user.photoURL ? (
+              <img src={user.photoURL} alt={user.displayName || "User"} className="w-6 h-6 sm:w-7 sm:h-7 rounded-full" referrerPolicy="no-referrer" />
+            ) : (
+              <span className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gray-700 flex items-center justify-center text-xs text-white">
+                {(user.displayName || user.email || "U")[0].toUpperCase()}
+              </span>
+            )}
+            <span className="hidden sm:inline">{user.displayName?.split(" ")[0] || "Account"}</span>
           </button>
-          <span className="absolute left-1/2 -translate-x-1/2 text-black font-black text-lg sm:text-2xl md:text-3xl uppercase tracking-[0.1em] sm:tracking-[0.15em] whitespace-nowrap">
-            Just Spin
-          </span>
-          {authLoading ? null : user ? (
-            <button
-              onClick={logout}
-              className="flex items-center gap-2 bg-black text-white font-bold text-xs sm:text-base px-3 sm:px-4 py-2 sm:py-2.5 rounded-full hover:opacity-80 transition-all whitespace-nowrap"
-              title="Click to log out"
-            >
-              {user.photoURL ? (
-                <img src={user.photoURL} alt={user.displayName || "User"} className="w-6 h-6 sm:w-7 sm:h-7 rounded-full" referrerPolicy="no-referrer" />
-              ) : (
-                <span className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gray-700 flex items-center justify-center text-xs">
-                  {(user.displayName || user.email || "U")[0].toUpperCase()}
-                </span>
-              )}
-              <span className="hidden sm:inline">{user.displayName?.split(" ")[0] || "Account"}</span>
-            </button>
-          ) : (
-            <button
-              onClick={login}
-              className="bg-black text-white font-bold text-xs sm:text-base px-4 sm:px-6 py-2 sm:py-2.5 rounded-full hover:opacity-80 transition-all whitespace-nowrap"
-            >
-              Sign in
-            </button>
-          )}
-        </nav>
-      </div>
+        ) : (
+          <button
+            onClick={login}
+            className="text-black font-bold text-xs sm:text-base px-4 sm:px-6 py-2 sm:py-2.5 rounded-full hover:opacity-80 transition-all whitespace-nowrap"
+            style={{ background: "#F97316" }}
+          >
+            Sign in
+          </button>
+        )}
+      </nav>
 
       {/* Content */}
       <div className="flex justify-center px-4 pt-8 pb-12">
@@ -812,12 +771,6 @@ export default function CityPage() {
 
         {/* CENTER — your existing content, unchanged */}
         <div className="w-full">
-
-        {/* Weather + Did you know */}
-        <div className="grid grid-cols-2 gap-3 my-4">
-          <WeatherBox cityName={cityName} />
-          <FactsBox cityName={cityName} />
-        </div>
 
         {/* Toggle */}
         <div className="flex gap-2 p-1 rounded-full my-4" style={glassCard}>
@@ -859,6 +812,11 @@ export default function CityPage() {
         {/* SPIN MODE */}
         {mode === "spin" && (
           <div>
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              <WeatherBox cityName={cityName} />
+              <FactsBox cityName={cityName} />
+            </div>
+
             {cityName === "Bengaluru" && (
               <div className="rounded-2xl p-4 mb-3" style={glassCard}>
                 <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "#06B6D4" }}>Pick your area</p>
