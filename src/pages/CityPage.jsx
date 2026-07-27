@@ -13,44 +13,6 @@ const glassCard = {
 const blue = "linear-gradient(to right, #2563EB, #3B82F6)";
 const cyan = "linear-gradient(to right, #06B6D4, #0891b2)";
 
-const cityData = {
-  Bengaluru: {
-    images: [
-      "https://images.unsplash.com/photo-1580714234233-2b3fc19c6fd0?w=2600&q=95&fit=crop&dpr=2&auto=format", // Bangalore cityscape
-      "https://images.unsplash.com/photo-1580017830165-98fb8112ab98?w=2600&q=95&fit=crop&dpr=2&auto=format", // Bangalore Palace
-      "https://images.unsplash.com/photo-1596176530529-78163a4f7af2?w=2600&q=95&fit=crop&dpr=2&auto=format", // Bangalore skyline
-      "https://images.unsplash.com/photo-1600100397608-f7febcf6db86?w=2600&q=95&fit=crop&dpr=2&auto=format", // Cubbon Park / Lalbagh greenery
-    ],
-    tagline: "Silicon Valley of India",
-    spotCount: 340,
-    locked: false,
-  },
-  Chennai: {
-    images: [
-      "https://images.unsplash.com/photo-1582651957983-56e9d6062e1c?w=2200&q=92&fit=crop&dpr=2&auto=format",
-    ],
-    tagline: "Gateway of South India",
-    spotCount: 0,
-    locked: true,
-  },
-  Hyderabad: {
-    images: [
-      "https://images.unsplash.com/photo-1533461502717-83546f485d24?w=2200&q=92&fit=crop&dpr=2&auto=format",
-    ],
-    tagline: "City of Nizams",
-    spotCount: 0,
-    locked: true,
-  },
-  Goa: {
-    images: [
-      "https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?w=2200&q=92&fit=crop&dpr=2&auto=format",
-    ],
-    tagline: "Pearl of the Orient",
-    spotCount: 0,
-    locked: true,
-  },
-};
-
 const cityPlans = {
   Bengaluru: [
     {
@@ -535,12 +497,8 @@ export default function CityPage() {
   const [foodCuisine, setFoodCuisine] = useState(null);
   const [selectedBudget, setSelectedBudget] = useState(null);
 
-  // Ref for the "Where do you want to go?" filter panel — used to smooth-scroll
-  // into view when a Hero Card shortcut (like the category tag) is clicked.
+  // Ref for the "Where do you want to go?" filter panel.
   const filterPanelRef = useRef(null);
-  // Briefly true right after a shortcut pre-selects chips, so we can pulse/highlight
-  // them and make it obvious to the user what just changed.
-  const [justHighlighted, setJustHighlighted] = useState(false);
 
   const [selectedLocation, setSelectedLocation] = useState("Anywhere in Bangalore");
   const [results, setResults] = useState([]);
@@ -854,8 +812,6 @@ export default function CityPage() {
                         ...(isSelected ? { background: blue } : {}),
                         opacity: cat.locked ? 0.35 : (atLimit ? 0.3 : undefined),
                         cursor: cat.locked ? "not-allowed" : undefined,
-                        boxShadow: isSelected && justHighlighted ? "0 0 0 3px rgba(6,182,212,0.6)" : "none",
-                        transform: isSelected && justHighlighted ? "scale(1.05)" : "scale(1)",
                       }}
                     >
                       {cat.emoji} {cat.label}{cat.locked ? " 🔒 Soon" : ""}
