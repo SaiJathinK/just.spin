@@ -19,8 +19,8 @@ const cities = [
     label: "Chennai",
     tagline: "Gateway of South India",
     images: [
-      "https://images.unsplash.com/photo-1582651957983-56e9d6062e1c?w=2600&q=95&fit=crop&dpr=2&auto=format",
       "https://images.unsplash.com/photo-1614850715649-1d0106293bd1?w=2600&q=95&fit=crop&dpr=2&auto=format",
+      "https://images.unsplash.com/photo-1644852037516-95c8fba481f9?w=2600&q=95&fit=crop&dpr=2&auto=format",
     ],
     locked: true,
   },
@@ -47,43 +47,43 @@ const cities = [
 ];
 
 const heroImages = [
-  "https://images.unsplash.com/photo-1533130061792-64b345e4a833?w=3200&q=95&fit=crop&dpr=2&auto=format", // adventure (hiking/mountain)
-  "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=3200&q=95&fit=crop&dpr=2&auto=format", // forest & water (waterfall in forest)
-  "https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?w=3200&q=95&fit=crop&dpr=2&auto=format", // resort (pool/luxury stay)
-  "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=3200&q=95&fit=crop&dpr=2&auto=format", // food (spread of dishes)
-  "https://images.unsplash.com/photo-1549366021-9f761d450615?w=3200&q=95&fit=crop&dpr=2&auto=format", // animals (wildlife)
+  "https://images.unsplash.com/photo-1533130061792-64b345e4a833?w=2400&q=85&fit=crop&auto=format", // adventure (hiking/mountain)
+  "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=2400&q=85&fit=crop&auto=format", // forest & water (waterfall in forest)
+  "https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?w=2400&q=85&fit=crop&auto=format", // resort (pool/luxury stay)
+  "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=2400&q=85&fit=crop&auto=format", // food (spread of dishes)
+  "https://images.unsplash.com/photo-1549366021-9f761d450615?w=2400&q=85&fit=crop&auto=format", // animals (wildlife)
 ];
 
 export default function Home() {
   const navigate = useNavigate();
   const { user, authLoading, login, logout } = useAuth();
   const [currentImage, setCurrentImage] = useState(0);
-  const [fade, setFade] = useState(true);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setFade(false);
-      setTimeout(() => {
-        setCurrentImage((prev) => (prev + 1) % heroImages.length);
-        setFade(true);
-      }, 500);
+      setCurrentImage((prev) => (prev + 1) % heroImages.length);
     }, 10000);
     return () => clearInterval(interval);
   }, []);
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
+    <div className="min-h-screen relative overflow-hidden" style={{ background: "#0f172a" }}>
 
-      {/* Background Image */}
-      <div
-        className="absolute inset-0 transition-opacity duration-500"
-        style={{
-          backgroundImage: `url(${heroImages[currentImage]})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          opacity: fade ? 1 : 0,
-        }}
-      />
+      {/* Background Images — all stacked and preloaded upfront so rotation is a true
+          crossfade (outgoing fades out while incoming fades in, simultaneously) with
+          no gap where nothing is loaded/visible yet. */}
+      {heroImages.map((src, i) => (
+        <div
+          key={src}
+          className="absolute inset-0 transition-opacity duration-1000 ease-in-out"
+          style={{
+            backgroundImage: `url(${src})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            opacity: i === currentImage ? 1 : 0,
+          }}
+        />
+      ))}
 
       {/* Dark overlay */}
       <div
@@ -95,46 +95,48 @@ export default function Home() {
       <div className="relative z-10">
 
         {/* Navbar */}
-        <nav className="flex items-center justify-between px-6 sm:px-12 py-5 bg-white">
-          <span className="text-black font-black text-xl sm:text-2xl uppercase tracking-[0.15em]">
-            Just Spin
-          </span>
-          <div className="flex items-center gap-5 sm:gap-6">
-            <button aria-label="Search" className="text-black hover:opacity-60 transition-opacity">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 sm:w-6 sm:h-6">
-                <circle cx="11" cy="11" r="8" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
-            </button>
-            {authLoading ? null : user ? (
-              <button
-                onClick={logout}
-                className="flex items-center gap-2 bg-black text-white font-bold text-sm sm:text-base px-4 py-2.5 rounded-full hover:opacity-80 transition-all"
-                title="Click to log out"
-              >
-                {user.photoURL ? (
-                  <img src={user.photoURL} alt={user.displayName || "User"} className="w-6 h-6 sm:w-7 sm:h-7 rounded-full" referrerPolicy="no-referrer" />
-                ) : (
-                  <span className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gray-700 flex items-center justify-center text-xs">
-                    {(user.displayName || user.email || "U")[0].toUpperCase()}
-                  </span>
-                )}
-                <span className="hidden sm:inline">{user.displayName?.split(" ")[0] || "Account"}</span>
+        <div className="px-3 pt-3">
+          <nav className="flex items-center justify-between px-6 sm:px-12 py-5 bg-white rounded-2xl">
+            <span className="text-black font-black text-xl sm:text-2xl uppercase tracking-[0.15em]">
+              Just Spin
+            </span>
+            <div className="flex items-center gap-5 sm:gap-6">
+              <button aria-label="Search" className="text-black hover:opacity-60 transition-opacity">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 sm:w-6 sm:h-6">
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
               </button>
-            ) : (
-              <button
-                onClick={login}
-                className="bg-black text-white font-bold text-sm sm:text-base px-6 py-2.5 rounded-full hover:opacity-80 transition-all"
-              >
-                Login
-              </button>
-            )}
-          </div>
-        </nav>
+              {authLoading ? null : user ? (
+                <button
+                  onClick={logout}
+                  className="flex items-center gap-2 bg-black text-white font-bold text-xs sm:text-base px-3 sm:px-4 py-2 sm:py-2.5 rounded-full hover:opacity-80 transition-all"
+                  title="Click to log out"
+                >
+                  {user.photoURL ? (
+                    <img src={user.photoURL} alt={user.displayName || "User"} className="w-6 h-6 sm:w-7 sm:h-7 rounded-full" referrerPolicy="no-referrer" />
+                  ) : (
+                    <span className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gray-700 flex items-center justify-center text-xs">
+                      {(user.displayName || user.email || "U")[0].toUpperCase()}
+                    </span>
+                  )}
+                  <span className="hidden sm:inline">{user.displayName?.split(" ")[0] || "Account"}</span>
+                </button>
+              ) : (
+                <button
+                  onClick={login}
+                  className="bg-black text-white font-bold text-xs sm:text-base px-4 sm:px-6 py-2 sm:py-2.5 rounded-full hover:opacity-80 transition-all"
+                >
+                  Sign in
+                </button>
+              )}
+            </div>
+          </nav>
+        </div>
 
         {/* Hero Text */}
-        <div className="text-center px-4 pt-16 sm:pt-24 pb-12 sm:pb-20">
-          <h1 className="text-6xl sm:text-8xl font-black text-white mb-6 leading-tight">
+        <div className="text-center px-4 pt-10 sm:pt-16 md:pt-24 pb-8 sm:pb-12 md:pb-20">
+          <h1 className="text-4xl sm:text-6xl md:text-8xl font-black text-white mb-4 sm:mb-6 leading-tight">
             Find your<br />
             <span style={{ color: "#06B6D4" }}>Perfect spot</span>
           </h1>

@@ -442,12 +442,12 @@ function WeatherBox({ cityName }) {
   }, [cityName]);
 
   return (
-    <div className="rounded-2xl p-4 flex flex-col justify-center border-2" style={{ background: "#F5C518", borderColor: "#06B6D4" }}>
-      <p className="text-xs font-bold uppercase tracking-widest mb-1 text-black opacity-70">Weather</p>
-      {weather === null && <div className="h-6 w-20 rounded bg-black/10 animate-pulse mt-1" />}
-      {weather === "error" && <p className="text-black opacity-50 text-sm">Unavailable</p>}
+    <div className="rounded-2xl p-4 flex flex-col justify-center" style={glassCard}>
+      <p className="text-xs font-bold uppercase tracking-widest mb-1" style={{ color: "#06B6D4" }}>Weather</p>
+      {weather === null && <div className="h-6 w-20 rounded bg-white/10 animate-pulse mt-1" />}
+      {weather === "error" && <p className="text-white opacity-50 text-sm">Unavailable</p>}
       {weather && weather !== "error" && (
-        <p className="text-black font-black text-lg leading-tight">
+        <p className="text-white font-black text-lg leading-tight">
           {weather.emoji} {weather.tempC}°C
           <span className="block text-xs font-semibold opacity-60">{weather.label}</span>
         </p>
@@ -495,6 +495,7 @@ export default function CityPage() {
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [foodVeg, setFoodVeg] = useState(null);
   const [foodCuisine, setFoodCuisine] = useState(null);
+  const [experienceType, setExperienceType] = useState(null);
   const [selectedBudget, setSelectedBudget] = useState(null);
 
   // Ref for the "Where do you want to go?" filter panel.
@@ -524,6 +525,14 @@ export default function CityPage() {
 
   const budgets = ["Under 1000", "1000-2500", "2500+"];
 
+  // Exact, closed list of allowed "Experiences" sub-types — nothing outside this list
+  // is considered a valid Experience, regardless of what the data source returns.
+  const EXPERIENCE_TYPES = [
+    "Vineyard", "Winery Tour", "Organic Farm", "Pottery Workshop", "Art Workshop",
+    "Chocolate Factory", "Horse Ranch", "Yoga Retreat", "Ayurveda",
+    "Microlight Flying", "Paragliding", "Para Sailing", "Hot Air Balloon",
+  ];
+
   const bangaloreLocations = [
     "Anywhere in Bangalore", "Koramangala", "Indiranagar", "MG Road",
     "Brigade Road", "Jayanagar", "JP Nagar", "HSR Layout", "Whitefield",
@@ -548,20 +557,58 @@ export default function CityPage() {
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   };
 
+  // Minimum bar for a place to be considered "real" and currently open for business.
+  // Applied to every raw searchPlaces() result before it ever reaches the UI.
+  const MIN_RATING = 3.5;
+  const MIN_REVIEWS = 5;
+
+  const isQualityPlace = (place, cat = null) => {
+    if (!place || !place.name) return false;
+
+    // Drop anything Google/the data source has flagged as closed.
+    const status = (place.business_status || place.businessStatus || "").toUpperCase();
+    if (status === "CLOSED_PERMANENTLY" || status === "CLOSED_TEMPORARILY") return false;
+    if (place.permanently_closed === true) return false;
+
+    // Drop listings with no real location — a common sign of a bad/fake entry.
+    if (place.lat == null || place.lng == null) return false;
+
+    // Drop listings with no meaningful review history — low-credibility / likely fake.
+    const totalRatings = place.totalRatings || 0;
+    const rating = place.rating || 0;
+    if (totalRatings < MIN_REVIEWS) return false;
+    if (rating < MIN_RATING) return false;
+
+    // "Experiences" is a closed list — only these exact sub-types are allowed,
+    // nothing more, nothing less, regardless of what the data source labels it.
+    if (cat === "Experiences") {
+      const haystack = `${place.type || ""} ${place.category || ""} ${place.name || ""}`.toLowerCase();
+      const matchesWhitelist = EXPERIENCE_TYPES.some((t) => haystack.includes(t.toLowerCase()));
+      if (!matchesWhitelist) return false;
+
+      // If the user picked one specific sub-type, narrow further to just that.
+      if (experienceType && !haystack.includes(experienceType.toLowerCase())) return false;
+    }
+
+    return true;
+  };
+
+  const filterQualityPlaces = (places, cat = null) => (places || []).filter((p) => isQualityPlace(p, cat));
+
   // Tries the place area first, then a broader "near <area>" search, then the whole city.
   // Returns { list, forced } where `forced` is the single most-famous pick when the
   // category didn't exist locally and we had to widen the search.
   const getCategoryCandidates = async (cat, budget, searchCity, cityWide, foodFilters) => {
-    const local = await searchPlaces(cat, budget, searchCity, false, foodFilters);
+    const local = filterQualityPlaces(await searchPlaces(cat, budget, searchCity, false, foodFilters), cat);
     if (local.length > 0) return { list: local, forced: null };
 
-    const near = await searchPlaces(cat, budget, searchCity, true, foodFilters);
+    const near = filterQualityPlaces(await searchPlaces(cat, budget, searchCity, true, foodFilters), cat);
     if (near.length > 0) {
       const famous = [...near].sort((a, b) => (b.rating * (b.totalRatings || 1)) - (a.rating * (a.totalRatings || 1)))[0];
       return { list: near, forced: famous };
     }
 
-    const cityList = await searchPlaces(cat, budget, cityWide, false, foodFilters);
+    const cityList = filterQualityPlaces(await searchPlaces(cat, budget, cityWide, false, foodFilters), cat);
     if (cityList.length > 0) {
       const famous = [...cityList].sort((a, b) => (b.rating * (b.totalRatings || 1)) - (a.rating * (a.totalRatings || 1)))[0];
       return { list: cityList, forced: famous };
@@ -576,10 +623,13 @@ export default function CityPage() {
       const foodFilters = { veg: foodVeg, cuisine: foodCuisine };
       if (selectedCategories.length > 1) {
         const lists = await Promise.all(selectedCategories.map((cat) => searchPlaces(cat, selectedBudget, searchCity, false, foodFilters)));
-        const combined = lists.flat().sort(() => Math.random() - 0.5);
+        const combined = lists
+          .flatMap((list, i) => filterQualityPlaces(list, selectedCategories[i]))
+          .sort(() => Math.random() - 0.5);
         setResults(combined);
       } else {
-        const data = await searchPlaces(selectedCategories[0] || null, selectedBudget, searchCity, false, foodFilters);
+        const cat = selectedCategories[0] || null;
+        const data = filterQualityPlaces(await searchPlaces(cat, selectedBudget, searchCity, false, foodFilters), cat);
         setResults(data);
       }
     } catch (e) { setResults([]); } finally { setLoading(false); }
@@ -689,39 +739,39 @@ export default function CityPage() {
     <div className="min-h-screen pb-24" style={{ background: "#0F172A" }}>
 
       {/* Navbar */}
-      <nav className="relative flex items-center justify-between px-4 sm:px-12 py-3 sm:py-5" style={{ background: "#F5C518" }}>
-        <button onClick={() => navigate("/")} className="text-black font-medium text-sm sm:text-lg hover:opacity-60 transition-opacity whitespace-nowrap">
-          ← Back
-        </button>
-        <span className="absolute left-1/2 -translate-x-1/2 text-black font-black text-lg sm:text-2xl md:text-3xl uppercase tracking-[0.1em] sm:tracking-[0.15em] whitespace-nowrap">
-          Just Spin
-        </span>
-        {authLoading ? null : user ? (
-          <button
-            onClick={logout}
-            className="flex items-center gap-2 text-black font-bold text-xs sm:text-base px-3 sm:px-4 py-2 sm:py-2.5 rounded-full hover:opacity-80 transition-all whitespace-nowrap"
-            style={{ background: "#F97316" }}
-            title="Click to log out"
-          >
-            {user.photoURL ? (
-              <img src={user.photoURL} alt={user.displayName || "User"} className="w-6 h-6 sm:w-7 sm:h-7 rounded-full" referrerPolicy="no-referrer" />
-            ) : (
-              <span className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gray-700 flex items-center justify-center text-xs text-white">
-                {(user.displayName || user.email || "U")[0].toUpperCase()}
-              </span>
-            )}
-            <span className="hidden sm:inline">{user.displayName?.split(" ")[0] || "Account"}</span>
+      <div className="px-3 pt-3">
+        <nav className="relative flex items-center justify-between px-4 sm:px-12 py-3 sm:py-5 bg-white rounded-2xl">
+          <button onClick={() => navigate("/")} className="text-black font-medium text-sm sm:text-lg hover:opacity-60 transition-opacity whitespace-nowrap">
+            ← Back
           </button>
-        ) : (
-          <button
-            onClick={login}
-            className="text-black font-bold text-xs sm:text-base px-4 sm:px-6 py-2 sm:py-2.5 rounded-full hover:opacity-80 transition-all whitespace-nowrap"
-            style={{ background: "#F97316" }}
-          >
-            Sign in
-          </button>
-        )}
-      </nav>
+          <span className="absolute left-1/2 -translate-x-1/2 text-black font-black text-lg sm:text-2xl md:text-3xl uppercase tracking-[0.1em] sm:tracking-[0.15em] whitespace-nowrap">
+            Just Spin
+          </span>
+          {authLoading ? null : user ? (
+            <button
+              onClick={logout}
+              className="flex items-center gap-2 bg-black text-white font-bold text-xs sm:text-base px-3 sm:px-4 py-2 sm:py-2.5 rounded-full hover:opacity-80 transition-all whitespace-nowrap"
+              title="Click to log out"
+            >
+              {user.photoURL ? (
+                <img src={user.photoURL} alt={user.displayName || "User"} className="w-6 h-6 sm:w-7 sm:h-7 rounded-full" referrerPolicy="no-referrer" />
+              ) : (
+                <span className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gray-700 flex items-center justify-center text-xs">
+                  {(user.displayName || user.email || "U")[0].toUpperCase()}
+                </span>
+              )}
+              <span className="hidden sm:inline">{user.displayName?.split(" ")[0] || "Account"}</span>
+            </button>
+          ) : (
+            <button
+              onClick={login}
+              className="bg-black text-white font-bold text-xs sm:text-base px-4 sm:px-6 py-2 sm:py-2.5 rounded-full hover:opacity-80 transition-all whitespace-nowrap"
+            >
+              Sign in
+            </button>
+          )}
+        </nav>
+      </div>
 
       {/* Content */}
       <div className="flex justify-center px-4 pt-8 pb-12">
@@ -729,6 +779,12 @@ export default function CityPage() {
 
         {/* CENTER — your existing content, unchanged */}
         <div className="w-full">
+
+        {/* Weather + Did you know */}
+        <div className="grid grid-cols-2 gap-3 mt-4">
+          <WeatherBox cityName={cityName} />
+          <FactsBox cityName={cityName} />
+        </div>
 
         {/* Toggle */}
         <div className="flex gap-2 p-1 rounded-full my-4" style={glassCard}>
@@ -770,11 +826,6 @@ export default function CityPage() {
         {/* SPIN MODE */}
         {mode === "spin" && (
           <div>
-            <div className="grid grid-cols-2 gap-3 mb-3">
-              <WeatherBox cityName={cityName} />
-              <FactsBox cityName={cityName} />
-            </div>
-
             {cityName === "Bengaluru" && (
               <div className="rounded-2xl p-4 mb-3" style={glassCard}>
                 <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "#06B6D4" }}>Pick your area</p>
@@ -803,6 +854,7 @@ export default function CityPage() {
                         if (isSelected) {
                           setSelectedCategories(selectedCategories.filter((c) => c !== cat.label));
                           if (cat.label === "Food") { setFoodVeg(null); setFoodCuisine(null); }
+                          if (cat.label === "Experiences") { setExperienceType(null); }
                         } else if (selectedCategories.length < 3) {
                           setSelectedCategories([...selectedCategories, cat.label]);
                         }
@@ -862,6 +914,26 @@ export default function CityPage() {
                 </div>
               </div>
             )}
+
+            {selectedCategories.includes("Experiences") && (
+              <div className="rounded-2xl p-4 mb-3" style={glassCard}>
+                <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "#06B6D4" }}>Experience Type</p>
+                <div className="flex gap-2 flex-wrap">
+                  {EXPERIENCE_TYPES.map((t) => (
+                    <button
+                      key={t}
+                      onClick={() => setExperienceType(experienceType === t ? null : t)}
+                      className={experienceType === t ? pillActive : pillBase}
+                      style={experienceType === t ? { background: blue } : {}}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+
 
             <div className="rounded-2xl p-4 mb-5" style={glassCard}>
               <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "#06B6D4" }}>Budget</p>
