@@ -1,3 +1,23 @@
+const experienceTypeToKeyword = {
+  "Vineyard": "vineyard wine tasting",
+  "Winery Tour": "winery tour",
+  "Chocolate Factory": "chocolate factory tour",
+  "Horse Ranch": "horse riding ranch",
+  "Yoga Retreat": "yoga retreat center",
+  "Ayurveda": "ayurveda wellness center spa",
+  // Temporarily locked in the UI (not selectable), but kept mapped here so
+  // they're easy to re-enable later without touching the search logic.
+  "Microlight Flying": "microlight flying",
+  "Paragliding": "paragliding",
+  "Para Sailing": "para sailing parasailing",
+  "Hot Air Balloon": "hot air balloon ride",
+};
+
+// Only the currently-unlocked sub-types are included in the generic
+// "browse all Experiences" merge — locked ones stay reachable only via
+// their specific keyword above, for when they're unlocked later.
+const UNLOCKED_EXPERIENCE_TYPES = ["Vineyard", "Winery Tour", "Chocolate Factory", "Horse Ranch", "Yoga Retreat", "Ayurveda"];
+
 const categoryToKeyword = {
   Adventure: ["trekking trails", "ATV off-roading", "kayaking", "paragliding", "go-karting", "adventure sports camp"],
   Nature: "parks gardens zoo wildlife sanctuary lakes",
@@ -5,7 +25,10 @@ const categoryToKeyword = {
   Food: "restaurants cafes pubs breweries dhaba street food",
   Heritage: "historical monuments museums art galleries forts palaces",
   Entertainment: ["gaming arcade", "bowling alley", "VR gaming zone", "escape room"],
-  Experiences: "wine tour farm stay play arena unique experiences",
+  // Each sub-type gets its own targeted search, same pattern as Adventure/Spiritual —
+  // a single generic query like "wine tour farm stay unique experiences" doesn't
+  // surface things like paragliding operators or pottery studios at all.
+  Experiences: UNLOCKED_EXPERIENCE_TYPES.map((t) => experienceTypeToKeyword[t]),
 };
 
 const cuisineToKeyword = {
@@ -89,10 +112,16 @@ const runQuery = async (query) => {
   }
 };
 
-export async function searchPlaces(category, budget, city, near = false, foodFilters = {}) {
-  const keywordEntry = categoryToKeyword[category] || "places";
+export async function searchPlaces(category, budget, city, near = false, foodFilters = {}, experienceType = null) {
+  let keywordEntry = categoryToKeyword[category] || "places";
   const location = city || "Bengaluru";
   const connector = near ? " near " : " in ";
+
+  // If the user picked one specific Experience sub-type, search that exact
+  // keyword only, instead of running all 13 sub-searches and filtering after.
+  if (category === "Experiences" && experienceType && experienceTypeToKeyword[experienceType]) {
+    keywordEntry = experienceTypeToKeyword[experienceType];
+  }
 
   // Categories with several distinct sub-keywords (e.g. Adventure covers trekking,
   // kayaking, paragliding...) run one targeted search per sub-keyword in parallel

@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { subscribeToAuthChanges, signInWithGoogle, logOut } from "../services/firebase";
+import { subscribeToAuthChanges, signInWithGoogle, logOut, checkRedirectResult } from "../services/firebase";
 
 const AuthContext = createContext(null);
 
@@ -8,6 +8,12 @@ export function AuthProvider({ children }) {
   const [authLoading, setAuthLoading] = useState(true);
 
   useEffect(() => {
+    // Picks up the result of a mobile signInWithRedirect flow, if the user
+    // is returning from Google's sign-in page. onAuthStateChanged below
+    // will also fire once this resolves, but calling this explicitly lets
+    // us catch/log redirect-specific errors.
+    checkRedirectResult();
+
     const unsubscribe = subscribeToAuthChanges((firebaseUser) => {
       setUser(firebaseUser);
       setAuthLoading(false);

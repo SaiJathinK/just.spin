@@ -351,13 +351,21 @@ function PlanModal({ plan, onClose }) {
               <p className="text-white font-bold text-sm">Full Day Route</p>
               <p className="text-white opacity-50 text-xs">All {plan.stops.length} stops</p>
             </div>
-            {!loadingPhotos && validStops.length > 0 ? (
-              <button onClick={() => window.open(routeUrl, "_blank")} className="w-full py-3 text-white font-bold text-sm" style={{ background: `${plan.color}30` }}>Open Full Route in Google Maps</button>
-            ) : (
-              <div className="p-8 text-center"><p className="text-white opacity-40 text-sm">{loadingPhotos ? "Loading map..." : "Map unavailable"}</p></div>
+            {loadingPhotos && (
+              <div className="p-8 text-center"><p className="text-white opacity-40 text-sm">Loading map...</p></div>
             )}
           </div>
-          <button className="w-full py-4 rounded-2xl text-white font-black text-sm tracking-widest uppercase" style={{ background: plan.color }} onClick={onClose}>Let's Go!</button>
+          <button
+            className="w-full py-4 rounded-2xl text-white font-black text-sm tracking-widest uppercase"
+            style={{ background: plan.color, opacity: !loadingPhotos && validStops.length > 0 ? 1 : 0.5 }}
+            disabled={loadingPhotos || validStops.length === 0}
+            onClick={() => {
+              window.open(routeUrl, "_blank");
+              onClose();
+            }}
+          >
+            Let's Go!
+          </button>
         </div>
       </div>
     </div>
@@ -527,10 +535,13 @@ export default function CityPage() {
 
   // Exact, closed list of allowed "Experiences" sub-types — nothing outside this list
   // is considered a valid Experience, regardless of what the data source returns.
+  // The aerial/flying ones are marked locked (temporarily unavailable, shown as
+  // disabled "Soon" pills) rather than removed outright.
   const EXPERIENCE_TYPES = [
-    "Vineyard", "Winery Tour", "Organic Farm", "Pottery Workshop", "Art Workshop",
-    "Chocolate Factory", "Horse Ranch", "Yoga Retreat", "Ayurveda",
-    "Microlight Flying", "Paragliding", "Para Sailing", "Hot Air Balloon",
+    { label: "Vineyard & Winery Tour" },
+    { label: "Chocolate Factory" }, { label: "Horse Ranch" }, { label: "Yoga Retreat" }, { label: "Ayurveda" },
+    { label: "Microlight Flying", locked: true }, { label: "Paragliding", locked: true },
+    { label: "Para Sailing", locked: true }, { label: "Hot Air Balloon", locked: true },
   ];
 
   const bangaloreLocations = [
@@ -579,16 +590,12 @@ export default function CityPage() {
     if (totalRatings < MIN_REVIEWS) return false;
     if (rating < MIN_RATING) return false;
 
-    // "Experiences" is a closed list — only these exact sub-types are allowed,
-    // nothing more, nothing less, regardless of what the data source labels it.
-    if (cat === "Experiences") {
-      const haystack = `${place.type || ""} ${place.category || ""} ${place.name || ""}`.toLowerCase();
-      const matchesWhitelist = EXPERIENCE_TYPES.some((t) => haystack.includes(t.toLowerCase()));
-      if (!matchesWhitelist) return false;
-
-      // If the user picked one specific sub-type, narrow further to just that.
-      if (experienceType && !haystack.includes(experienceType.toLowerCase())) return false;
-    }
+    // "Experiences" now runs a targeted search per sub-type (see places.js) —
+    // the query itself already guarantees relevance, so we no longer re-check
+    // result text against a whitelist here. The old whitelist required the
+    // place's name/type to literally contain words like "Paragliding", which
+    // caused real results to get dropped even when the search was correct
+    // (e.g. an operator listed on Google simply as "Bir Adventures").
 
     return true;
   };
@@ -599,16 +606,16 @@ export default function CityPage() {
   // Returns { list, forced } where `forced` is the single most-famous pick when the
   // category didn't exist locally and we had to widen the search.
   const getCategoryCandidates = async (cat, budget, searchCity, cityWide, foodFilters) => {
-    const local = filterQualityPlaces(await searchPlaces(cat, budget, searchCity, false, foodFilters), cat);
+    const local = filterQualityPlaces(await searchPlaces(cat, budget, searchCity, false, foodFilters, experienceType), cat);
     if (local.length > 0) return { list: local, forced: null };
 
-    const near = filterQualityPlaces(await searchPlaces(cat, budget, searchCity, true, foodFilters), cat);
+    const near = filterQualityPlaces(await searchPlaces(cat, budget, searchCity, true, foodFilters, experienceType), cat);
     if (near.length > 0) {
       const famous = [...near].sort((a, b) => (b.rating * (b.totalRatings || 1)) - (a.rating * (a.totalRatings || 1)))[0];
       return { list: near, forced: famous };
     }
 
-    const cityList = filterQualityPlaces(await searchPlaces(cat, budget, cityWide, false, foodFilters), cat);
+    const cityList = filterQualityPlaces(await searchPlaces(cat, budget, cityWide, false, foodFilters, experienceType), cat);
     if (cityList.length > 0) {
       const famous = [...cityList].sort((a, b) => (b.rating * (b.totalRatings || 1)) - (a.rating * (a.totalRatings || 1)))[0];
       return { list: cityList, forced: famous };
@@ -622,14 +629,14 @@ export default function CityPage() {
       const searchCity = selectedLocation === "Anywhere in Bangalore" ? cityName : selectedLocation + " " + cityName;
       const foodFilters = { veg: foodVeg, cuisine: foodCuisine };
       if (selectedCategories.length > 1) {
-        const lists = await Promise.all(selectedCategories.map((cat) => searchPlaces(cat, selectedBudget, searchCity, false, foodFilters)));
+        const lists = await Promise.all(selectedCategories.map((cat) => searchPlaces(cat, selectedBudget, searchCity, false, foodFilters, experienceType)));
         const combined = lists
           .flatMap((list, i) => filterQualityPlaces(list, selectedCategories[i]))
           .sort(() => Math.random() - 0.5);
         setResults(combined);
       } else {
         const cat = selectedCategories[0] || null;
-        const data = filterQualityPlaces(await searchPlaces(cat, selectedBudget, searchCity, false, foodFilters), cat);
+        const data = filterQualityPlaces(await searchPlaces(cat, selectedBudget, searchCity, false, foodFilters, experienceType), cat);
         setResults(data);
       }
     } catch (e) { setResults([]); } finally { setLoading(false); }
@@ -919,14 +926,19 @@ export default function CityPage() {
               <div className="rounded-2xl p-4 mb-3" style={glassCard}>
                 <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "#06B6D4" }}>Experience Type</p>
                 <div className="flex gap-2 flex-wrap">
-                  {EXPERIENCE_TYPES.map((t) => (
+                  {EXPERIENCE_TYPES.map((exp) => (
                     <button
-                      key={t}
-                      onClick={() => setExperienceType(experienceType === t ? null : t)}
-                      className={experienceType === t ? pillActive : pillBase}
-                      style={experienceType === t ? { background: blue } : {}}
+                      key={exp.label}
+                      disabled={exp.locked}
+                      onClick={() => !exp.locked && setExperienceType(experienceType === exp.label ? null : exp.label)}
+                      className={experienceType === exp.label ? pillActive : pillBase}
+                      style={{
+                        ...(experienceType === exp.label ? { background: blue } : {}),
+                        opacity: exp.locked ? 0.35 : undefined,
+                        cursor: exp.locked ? "not-allowed" : undefined,
+                      }}
                     >
-                      {t}
+                      {exp.label}{exp.locked ? " 🔒 Soon" : ""}
                     </button>
                   ))}
                 </div>
