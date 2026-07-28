@@ -1006,11 +1006,24 @@ export default function CityPage() {
       {selectedPlan && <PlanModal plan={selectedPlan} onClose={() => setSelectedPlan(null)} />}
 
       {/* Bottom nav bar */}
-      <div className="fixed bottom-0 left-0 right-0 flex items-center justify-center gap-6 sm:gap-10 py-4 z-40" style={{ background: "#000000", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
-        <button aria-label="Home" onClick={() => navigate("/")} className="w-11 h-11 rounded-full flex items-center justify-center text-lg" style={{ background: blue }}>🏠</button>
-        <button aria-label="Discover" onClick={() => setMode("discover")} className="w-11 h-11 rounded-full flex items-center justify-center text-lg" style={{ background: blue }}>🧭</button>
-        <button aria-label="Favorites" className="w-11 h-11 rounded-full flex items-center justify-center text-lg" style={{ background: blue }}>❤️</button>
-        <button aria-label="Profile" onClick={() => (user ? logout() : login())} className="w-11 h-11 rounded-full flex items-center justify-center text-lg" style={{ background: blue }}>👤</button>
+      <div className="fixed bottom-0 left-0 right-0 flex items-center justify-between px-4 sm:px-8 py-4 z-40" style={{ background: "#000000", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
+        <div className="flex-1" />
+        <div className="flex items-center justify-center gap-6 sm:gap-10">
+          <button aria-label="Home" onClick={() => navigate("/")} className="w-11 h-11 rounded-full flex items-center justify-center text-lg" style={{ background: blue }}>🏠</button>
+          <button aria-label="Discover" onClick={() => setMode("discover")} className="w-11 h-11 rounded-full flex items-center justify-center text-lg" style={{ background: blue }}>🧭</button>
+          <button aria-label="Favorites" className="w-11 h-11 rounded-full flex items-center justify-center text-lg" style={{ background: blue }}>❤️</button>
+          <button aria-label="Profile" onClick={() => (user ? logout() : login())} className="w-11 h-11 rounded-full flex items-center justify-center text-lg" style={{ background: blue }}>👤</button>
+        </div>
+        <div className="flex-1 flex justify-end">
+          <a
+            href="https://docs.google.com/forms/d/e/1FAIpQLSf3PxnHxYwtKcTz-UyFmDVebJY6RPasDZpwwmQbgaiX7OKcSw/viewform?usp=header"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center rounded-full px-3 sm:px-4 py-2 text-xs sm:text-sm font-bold text-white border-2 border-white/30 hover:border-white/60 transition-all whitespace-nowrap"
+          >
+            Feedback
+          </a>
+        </div>
       </div>
     </div>
   );
