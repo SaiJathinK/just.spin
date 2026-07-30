@@ -1,6 +1,8 @@
+import WaterButton from "../components/WaterButton";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+
 
 const cities = [
   {
@@ -96,7 +98,7 @@ export default function Home() {
 
         {/* Navbar */}
         <div className="px-3 pt-3">
-          <nav className="flex items-center justify-between px-6 sm:px-12 py-5 bg-white rounded-2xl">
+          <nav className="flex items-center justify-between px-6 sm:px-12 py-5 bg-white rounded-full">
             <span className="text-black font-black text-xl sm:text-2xl uppercase tracking-[0.15em]">
               Just Spin
             </span>
@@ -123,12 +125,20 @@ export default function Home() {
                   <span className="hidden sm:inline">{user.displayName?.split(" ")[0] || "Account"}</span>
                 </button>
               ) : (
-                <button
+                <WaterButton
+                  label="Sign in"
                   onClick={login}
-                  className="bg-black text-white font-bold text-xs sm:text-base px-4 sm:px-6 py-2 sm:py-2.5 rounded-full hover:opacity-80 transition-all"
-                >
-                  Sign in
-                </button>
+                  textColor="#FFFFFF"
+                  paddingX={24}
+                  paddingY={10}
+                  rounded={100}
+                  font={{ fontSize: "14px", fontWeight: 700 }}
+                  glass={{ tint: "rgba(0, 0, 0, 0.85)", blur: 20, frost: 20 }}
+                  waterAmount={25}
+                  waterColor="#11D5FF"
+                  border={false}
+                  shadow={false}
+                />
               )}
             </div>
           </nav>
@@ -153,7 +163,7 @@ export default function Home() {
                 key={city.name}
                 onClick={() => !city.locked && navigate(`/city/${city.name}`)}
                 disabled={city.locked}
-                className="relative rounded-2xl overflow-hidden text-left transition-all hover:scale-105"
+                className="relative rounded-2xl overflow-hidden text-left transition-all hover:scale-105 block w-full"
                 style={{ aspectRatio: "2 / 3", opacity: city.locked ? 0.6 : 1 }}
               >
                 {/* City background image */}

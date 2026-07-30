@@ -1,6 +1,5 @@
 const experienceTypeToKeyword = {
-  "Vineyard": "vineyard wine tasting",
-  "Winery Tour": "winery tour",
+  "Vineyard & Winery Tour": "vineyard winery tour wine tasting",
   "Chocolate Factory": "chocolate factory tour",
   "Horse Ranch": "horse riding ranch",
   "Yoga Retreat": "yoga retreat center",
@@ -16,7 +15,7 @@ const experienceTypeToKeyword = {
 // Only the currently-unlocked sub-types are included in the generic
 // "browse all Experiences" merge — locked ones stay reachable only via
 // their specific keyword above, for when they're unlocked later.
-const UNLOCKED_EXPERIENCE_TYPES = ["Vineyard", "Winery Tour", "Chocolate Factory", "Horse Ranch", "Yoga Retreat", "Ayurveda"];
+const UNLOCKED_EXPERIENCE_TYPES = ["Vineyard & Winery Tour", "Chocolate Factory", "Horse Ranch", "Yoga Retreat", "Ayurveda"];
 
 const categoryToKeyword = {
   Adventure: ["trekking trails", "ATV off-roading", "kayaking", "paragliding", "go-karting", "adventure sports camp"],
