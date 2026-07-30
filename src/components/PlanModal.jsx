@@ -18,6 +18,7 @@ export default function PlanModal({ plan, onClose }) {
       setLoadingPhotos(false);
     }
     fetchPhotos();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [plan.id]);
 
   const validStops = plan.stops.filter((s) => stopData[s.place]?.lat);
