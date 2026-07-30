@@ -98,7 +98,7 @@ export default function Home() {
 
         {/* Navbar */}
         <div className="px-3 pt-3">
-          <nav className="flex items-center justify-between px-6 sm:px-12 py-5 bg-white rounded-2xl">
+          <nav className="flex items-center justify-between px-6 sm:px-12 py-5 bg-white rounded-full">
             <span className="text-black font-black text-xl sm:text-2xl uppercase tracking-[0.15em]">
               Just Spin
             </span>
