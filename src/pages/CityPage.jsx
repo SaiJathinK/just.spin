@@ -19,6 +19,7 @@ export default function CityPage() {
   const { cityName } = useParams();
   const navigate = useNavigate();
   const { user, authLoading, login, logout } = useAuth();
+  // eslint-disable-next-line no-unused-vars
   const city = cityData[cityName] || cityData.Bengaluru;
   const plans = cityPlans[cityName] || [];
 
@@ -39,6 +40,7 @@ export default function CityPage() {
   // exact same setSelectedCategories state the manual chip clicks already use,
   // so there's no duplicated filtering logic anywhere), then smooth-scrolls
   // the filter panel into view and triggers a brief highlight pulse.
+  // eslint-disable-next-line no-unused-vars
   function quickExplore(categoryLabels) {
     setMode("spin");
     setSelectedCategories(categoryLabels.slice(0, 3)); // respect the existing 3-category cap
@@ -56,6 +58,7 @@ export default function CityPage() {
   // param (searchCity becomes "<placeName> <cityName>"), so Google's own
   // text-search relevance does the "find things near this place" work —
   // no new proximity/geo code needed here.
+  // eslint-disable-next-line no-unused-vars
   function spinNearPlace(placeName) {
     setMode("spin");
     filterPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
