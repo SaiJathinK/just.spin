@@ -21,13 +21,31 @@ export default function CityPage() {
   const { user, authLoading, login, logout } = useAuth();
   // eslint-disable-next-line no-unused-vars
   const city = cityData[cityName] || cityData.Bengaluru;
-  const plans = cityPlans[cityName] || [];
+  const allPlans = cityPlans[cityName] || [];
 
   const [mode, setMode] = useState("spin");
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [foodVeg, setFoodVeg] = useState(null);
   const [foodCuisine, setFoodCuisine] = useState(null);
   const [selectedBudget, setSelectedBudget] = useState(null);
+
+  // Discover mode filters — narrow down the static day-plan list by
+  // duration, vibe and proximity (AND across groups, single-select each,
+  // click-again-to-clear — same toggle pattern as foodVeg/foodCuisine).
+  const [selectedDuration, setSelectedDuration] = useState(null);
+  const [selectedVibe, setSelectedVibe] = useState(null);
+  const [selectedProximity, setSelectedProximity] = useState(null);
+
+  const durationOptions = ["Half-day", "Full-day", "Quick getaway (under 3 hours)"];
+  const vibeOptions = ["Nature & Outdoors", "Heritage & Culture", "Food & Trails", "Wildlife & Adventure"];
+  const proximityOptions = ["Within City Center", "Outskirts / Road Trip"];
+
+  const plans = allPlans.filter((plan) => {
+    if (selectedDuration && plan.duration !== selectedDuration) return false;
+    if (selectedVibe && plan.vibe !== selectedVibe) return false;
+    if (selectedProximity && plan.proximity !== selectedProximity) return false;
+    return true;
+  });
 
   // Ref for the "Where do you want to go?" filter panel — used to smooth-scroll
   // into view when a Hero Card shortcut (like the category tag) is clicked.
@@ -102,8 +120,7 @@ export default function CityPage() {
     "Banaswadi", "CV Raman Nagar", "Frazer Town",
   ];
 
-  const pillBase = "px-4 py-2 rounded-full text-sm font-semibold transition-all border border-white border-opacity-10 text-white opacity-60 bg-white bg-opacity-10";
-  const pillActive = "px-4 py-2 rounded-full text-sm font-semibold transition-all text-white";
+
 
   const distanceKm = (lat1, lng1, lat2, lng2) => {
     if (lat1 == null || lng1 == null || lat2 == null || lng2 == null) return Infinity;
@@ -249,6 +266,7 @@ export default function CityPage() {
     setFoodVeg(null); setFoodCuisine(null);
     setSelectedLocation("Anywhere in Bangalore");
     setResults([]); setSearched(false); setSpinResult(null); setSelectedPlan(null);
+    setSelectedDuration(null); setSelectedVibe(null); setSelectedProximity(null);
   };
 
   return (
@@ -338,14 +356,145 @@ export default function CityPage() {
               boxShadow: mode === "discover" ? accentGlow : "none",
             }}
           >
-            Discover {cityName}
+            🧭 Discover {cityName}
           </button>
         </div>
+
+        <style>{`
+          .press-btn {
+            position: relative;
+            display: inline-block;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            outline: none;
+            box-shadow: none;
+            margin: 0;
+            font-family: inherit;
+            padding: 0.55em 1.1em;
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.2px;
+            color: #fff;
+            background: rgba(var(--btn-rgb), 0.14);
+            border: 1px solid rgba(var(--btn-rgb), 0.55);
+            border-radius: 9999px;
+            cursor: pointer;
+            z-index: 0;
+            transition: transform 150ms cubic-bezier(0,0,0.58,1), background 150ms cubic-bezier(0,0,0.58,1);
+          }
+          .press-btn::before {
+            position: absolute;
+            content: '';
+            width: 100%;
+            height: 100%;
+            top: 0; left: 0;
+            background: rgba(var(--btn-rgb), 0.35);
+            border-radius: inherit;
+            transform: translateY(0.28em);
+            transition: transform 150ms cubic-bezier(0,0,0.58,1);
+            z-index: -1;
+          }
+          .press-btn:focus {
+            outline: none;
+            box-shadow: none;
+          }
+          .press-btn:hover {
+            background: rgba(var(--btn-rgb), 0.22);
+            transform: translateY(0.12em);
+          }
+          .press-btn:hover::before {
+            transform: translateY(0.16em);
+          }
+          .press-btn:active {
+            transform: translateY(0.28em);
+          }
+          .press-btn:active::before {
+            transform: translateY(0);
+          }
+          .press-btn.press-btn-active {
+            background: rgb(var(--btn-rgb));
+            border-color: rgb(var(--btn-rgb));
+            box-shadow: 0 6px 16px -2px rgba(var(--btn-rgb), 0.55);
+          }
+          .press-btn.press-btn-active::before {
+            display: none;
+          }
+          .press-btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.35;
+          }
+          .press-btn:disabled:hover {
+            transform: none;
+            background: rgba(var(--btn-rgb), 0.14);
+          }
+          .press-btn:disabled::before {
+            transform: translateY(0.28em);
+          }
+        `}</style>
 
         {/* DISCOVER MODE */}
         {mode === "discover" && (
           <div>
-            <p className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: "#06B6D4" }}>Day Plans for {cityName}</p>
+            <div className="rounded-2xl p-4 mb-4" style={glassCard}>
+              <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: "#06B6D4" }}>Duration</p>
+              <div className="flex gap-2.5 flex-wrap mb-5">
+                {durationOptions.map((d) => (
+                  <button
+                    key={d}
+                    onClick={() => setSelectedDuration(selectedDuration === d ? null : d)}
+                    className={`press-btn ${selectedDuration === d ? "press-btn-active" : ""}`}
+                    style={{ "--btn-rgb": "6, 182, 212" }}
+                  >
+                    {selectedDuration === d ? "✓ " : ""}{d}
+                  </button>
+                ))}
+              </div>
+
+              <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: "#06B6D4" }}>Vibe</p>
+              <div className="flex gap-2.5 flex-wrap mb-5">
+                {vibeOptions.map((v) => (
+                  <button
+                    key={v}
+                    onClick={() => setSelectedVibe(selectedVibe === v ? null : v)}
+                    className={`press-btn ${selectedVibe === v ? "press-btn-active" : ""}`}
+                    style={{ "--btn-rgb": "139, 92, 246" }}
+                  >
+                    {selectedVibe === v ? "✓ " : ""}{v}
+                  </button>
+                ))}
+              </div>
+
+              <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: "#06B6D4" }}>Proximity</p>
+              <div className="flex gap-2.5 flex-wrap">
+                {proximityOptions.map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setSelectedProximity(selectedProximity === p ? null : p)}
+                    className={`press-btn ${selectedProximity === p ? "press-btn-active" : ""}`}
+                    style={{ "--btn-rgb": "249, 115, 22" }}
+                  >
+                    {selectedProximity === p ? "✓ " : ""}{p}
+                  </button>
+                ))}
+              </div>
+
+              {(selectedDuration || selectedVibe || selectedProximity) && (
+                <div className="flex justify-end mt-3">
+                  <button
+                    onClick={() => { setSelectedDuration(null); setSelectedVibe(null); setSelectedProximity(null); }}
+                    className="text-white opacity-60 text-xs font-medium px-3 py-1.5 rounded-full"
+                    style={{ background: "rgba(255,255,255,0.08)" }}
+                  >
+                    Clear filters
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <p className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: "#06B6D4" }}>
+              {plans.length} Day {plans.length === 1 ? "Plan" : "Plans"} for {cityName}
+            </p>
             <div className="flex flex-col gap-3">
               {plans.length > 0 ? plans.map((plan) => (
                 <button key={plan.id} onClick={() => setSelectedPlan(plan)} className="rounded-2xl p-4 text-left transition-all" style={{ background: `${plan.color}15`, border: `1px solid ${plan.color}40` }}>
@@ -359,7 +508,13 @@ export default function CityPage() {
                     <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold" style={{ background: `${plan.color}40` }}>→</div>
                   </div>
                 </button>
-              )) : (
+              )) : allPlans.length > 0 ? (
+                <div className="rounded-2xl p-8 text-center" style={glassCard}>
+                  <p className="text-4xl mb-3">🔍</p>
+                  <p className="text-white font-bold">No plans match these filters</p>
+                  <p className="text-white opacity-50 text-sm mt-1">Try clearing a filter!</p>
+                </div>
+              ) : (
                 <div className="rounded-2xl p-8 text-center" style={glassCard}>
                   <p className="text-4xl mb-3">🚧</p>
                   <p className="text-white font-bold">Plans coming soon for {cityName}!</p>
@@ -426,16 +581,14 @@ export default function CityPage() {
                           setSelectedCategories([...selectedCategories, cat.label]);
                         }
                       }}
-                      className={`${isSelected ? pillActive : pillBase} transition-all duration-300`}
+                      className={`press-btn ${isSelected ? "press-btn-active" : ""}`}
                       style={{
-                        ...(isSelected ? { background: blue } : {}),
-                        opacity: cat.locked ? 0.35 : (atLimit ? 0.3 : undefined),
-                        cursor: cat.locked ? "not-allowed" : undefined,
-                        boxShadow: isSelected && justHighlighted ? "0 0 0 3px rgba(6,182,212,0.6)" : "none",
-                        transform: isSelected && justHighlighted ? "scale(1.05)" : "scale(1)",
+                        "--btn-rgb": "6, 182, 212",
+                        boxShadow: isSelected && justHighlighted ? "0 0 0 3px rgba(6,182,212,0.6)" : undefined,
+                        transform: isSelected && justHighlighted ? "scale(1.05)" : undefined,
                       }}
                     >
-                      {cat.emoji} {cat.label}{cat.locked ? " 🔒 Soon" : ""}
+                      {isSelected ? "✓ " : ""}{cat.emoji} {cat.label}{cat.locked ? " 🔒 Soon" : ""}
                     </button>
                   );
                 })}
@@ -450,33 +603,33 @@ export default function CityPage() {
                 <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "#06B6D4" }}>Food Preferences</p>
 
                 <p className="text-white opacity-60 text-xs font-semibold mb-2">Veg / Non-Veg</p>
-                <div className="flex gap-2 flex-wrap mb-4">
+                <div className="flex gap-2.5 flex-wrap mb-4">
                   {["Veg", "Non-Veg"].map((v) => (
                     <button
                       key={v}
                       onClick={() => setFoodVeg(foodVeg === v ? null : v)}
-                      className={foodVeg === v ? pillActive : pillBase}
-                      style={foodVeg === v ? { background: blue } : {}}
+                      className={`press-btn ${foodVeg === v ? "press-btn-active" : ""}`}
+                      style={{ "--btn-rgb": "34, 197, 94" }}
                     >
-                      {v}
+                      {foodVeg === v ? "✓ " : ""}{v}
                     </button>
                   ))}
                 </div>
 
                 <p className="text-white opacity-60 text-xs font-semibold mb-2">Cuisine</p>
-                <div className="flex gap-2 flex-wrap">
+                <div className="flex gap-2.5 flex-wrap">
                   {["South Indian", "North Indian", "Cafe", "Brewery", "Pub & Bar"].map((c) => (
                     <button
                       key={c}
                       onClick={() => setFoodCuisine(foodCuisine === c ? null : c)}
-                      className={foodCuisine === c ? pillActive : pillBase}
-                      style={foodCuisine === c ? { background: blue } : {}}
+                      className={`press-btn ${foodCuisine === c ? "press-btn-active" : ""}`}
+                      style={{ "--btn-rgb": "139, 92, 246" }}
                     >
-                      {c}
+                      {foodCuisine === c ? "✓ " : ""}{c}
                     </button>
                   ))}
                   {["Chinese", "Italian", "Continental"].map((c) => (
-                    <button key={c} disabled className={pillBase} style={{ opacity: 0.35, cursor: "not-allowed" }}>
+                    <button key={c} disabled className="press-btn" style={{ "--btn-rgb": "139, 92, 246" }}>
                       {c} <span className="ml-1 opacity-80">🔒 Soon</span>
                     </button>
                   ))}
@@ -486,10 +639,15 @@ export default function CityPage() {
 
             <div className="rounded-2xl p-4 mb-5" style={glassCard}>
               <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "#06B6D4" }}>Budget</p>
-              <div className="flex gap-2 flex-wrap">
+              <div className="flex gap-2.5 flex-wrap">
                 {budgets.map((b) => (
-                  <button key={b} onClick={() => setSelectedBudget(selectedBudget === b ? null : b)} className={selectedBudget === b ? pillActive : pillBase} style={selectedBudget === b ? { background: blue } : {}}>
-                    {b}
+                  <button
+                    key={b}
+                    onClick={() => setSelectedBudget(selectedBudget === b ? null : b)}
+                    className={`press-btn ${selectedBudget === b ? "press-btn-active" : ""}`}
+                    style={{ "--btn-rgb": "249, 115, 22" }}
+                  >
+                    {selectedBudget === b ? "✓ " : ""}{b}
                   </button>
                 ))}
               </div>

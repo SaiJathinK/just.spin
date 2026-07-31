@@ -8,6 +8,9 @@ export const cityPlans = {
       tagline: "Heritage, culture & food within 5km of city center",
       color: "#10B981",
       budget: "2,600-5,500 per person",
+      duration: "Full-day",
+      vibe: "Heritage & Culture",
+      proximity: "Within City Center",
       stops: [
         { time: "8:00-9:00 AM", place: "Konark Kanteerava", type: "Breakfast", note: "Benne dosa, idli-vada, kesari bath and filter coffee right beside Cubbon Park", cost: "200-350" },
         { time: "9:00-10:30 AM", place: "Cubbon Park", type: "Nature", note: "Walk through bamboo groves, bandstand and red Central Library", cost: "Free" },
@@ -20,7 +23,7 @@ export const cityPlans = {
         { time: "7:30-9:30 PM", place: "Spice Terrace Bangalore", type: "Dinner", note: "Rooftop North Indian dining", cost: "1,200-2,500" },
       ],
     },
-    { id: "blr-c", title: "Basavanagudi Heritage & Food Trail", emoji: "🌿", tagline: "Temples, gardens and old Bangalore's favourite food, all without feeling rushed", color: "#8B5CF6", budget: "2,700-4,700 for 2 people", stops: [
+    { id: "blr-c", title: "Basavanagudi Heritage & Food Trail", emoji: "🌿", tagline: "Temples, gardens and old Bangalore's favourite food, all without feeling rushed", color: "#8B5CF6", budget: "2,700-4,700 for 2 people", duration: "Full-day", vibe: "Heritage & Culture", proximity: "Within City Center", stops: [
       { time: "9:30 AM", place: "Vidyarthi Bhavan", type: "Breakfast", note: "Crispy masala dosa, vada and filter coffee", cost: "300-400 for 2" },
       { time: "10:30 AM", place: "Bull Temple (Dodda Basavana Gudi)", type: "Heritage", note: "One of Bangalore's oldest and most iconic temples, famous for its massive monolithic Nandi statue. ~45 min", cost: "Free" },
       { time: "11:15 AM", place: "Dodda Ganesha Temple", type: "Heritage", note: "Located just opposite the Bull Temple. Spend 20-30 minutes seeking blessings", cost: "Free" },
@@ -31,7 +34,7 @@ export const cityPlans = {
       { time: "6:30 PM", place: "VV Puram Food Street", type: "Dinner", note: "Akki roti, open butter dosa, gobi manchurian, holige, congress kadlekai, pani puri, jalebi and kulfi", cost: "600-800 for 2" },
       { time: "8:30-9:00 PM", place: "Return Home", type: "Evening", note: "Reach home by 9:00 PM", cost: "Fuel & parking ~500" },
     ]},
-    { id: "blr-g", title: "Tumakuru 1-Day Monsoon Getaway", emoji: "🌿", tagline: "A relaxed road trip to nature, forts and hilltop temples", color: "#22C55E", budget: "4,000-6,000 for 2 people", stops: [
+    { id: "blr-g", title: "Tumakuru 1-Day Monsoon Getaway", emoji: "🌿", tagline: "A relaxed road trip to nature, forts and hilltop temples", color: "#22C55E", budget: "4,000-6,000 for 2 people", duration: "Full-day", vibe: "Nature & Outdoors", proximity: "Outskirts / Road Trip", stops: [
       { time: "6:00 AM", place: "Bangalore", type: "Departure", note: "Start the road trip from Bangalore towards Tumakuru", cost: "Free" },
       { time: "7:30 AM", place: "A2B Tumakuru", type: "Breakfast", note: "Masala dosa, idli-vada and filter coffee", cost: "500 for 2" },
       { time: "8:45-10:15 AM", place: "Namada Chilume & Deer Park", type: "Nature", note: "Nature walk, deer park, natural spring and great photography spots", cost: "Free" },
@@ -42,7 +45,7 @@ export const cityPlans = {
       { time: "7:00 PM", place: "Kamat Upachar / Local Family Restaurant", type: "Dinner", note: "Hearty local dinner before the drive back", cost: "800 for 2" },
       { time: "8:00-10:00 PM", place: "Return to Bangalore", type: "Evening", note: "Drive back to Bangalore, reaching around 10 PM", cost: "Fuel & parking ~1,600" },
     ]},
-    { id: "blr-h", title: "Bannerghatta Wildlife Day Trip", emoji: "🦁", tagline: "Safari, zoo and butterfly park for a full day of family-friendly wildlife", color: "#F97316", budget: "4,700-5,100 for 2 people", stops: [
+    { id: "blr-h", title: "Bannerghatta Wildlife Day Trip", emoji: "🦁", tagline: "Safari, zoo and butterfly park for a full day of family-friendly wildlife", color: "#F97316", budget: "4,700-5,100 for 2 people", duration: "Full-day", vibe: "Wildlife & Adventure", proximity: "Outskirts / Road Trip", stops: [
       { time: "9:00 AM", place: "MTR (JP Nagar)", type: "Breakfast", note: "Rava idli, masala dosa and filter coffee", cost: "400-500 for 2" },
       { time: "10:00 AM-2:00 PM", place: "Bannerghatta Biological Park", type: "Adventure", note: "Grand safari (lion, tiger, bear & herbivore), zoo, elephant enclosure, reptile section and aviary. Do the safari first, then walk through the zoo. 4-5 hours", cost: "1,400-1,800 for 2" },
       { time: "2:00-3:00 PM", place: "Butterfly Park", type: "Nature", note: "Butterfly conservatory, museum and landscaped garden, great for photography. 45-60 min", cost: "Included in park ticket" },
@@ -51,7 +54,7 @@ export const cityPlans = {
       { time: "7:00 PM", place: "Platform65", type: "Dinner", note: "Fun train-served meals, biryani and sizzlers", cost: "800-1,200 for 2" },
       { time: "8:15-9:00 PM", place: "Return Home", type: "Evening", note: "Drive back, reaching home by 8:45-9:00 PM", cost: "Fuel & parking ~600" },
     ]},
-    { id: "blr-i", title: "Nandi Hills Sunrise & Vineyard Escape", emoji: "🌄", tagline: "Sunrise, heritage, a vineyard and Adiyogi in one scenic drive", color: "#0EA5E9", budget: "2,700-4,200 for 2 people", stops: [
+    { id: "blr-i", title: "Nandi Hills Sunrise & Vineyard Escape", emoji: "🌄", tagline: "Sunrise, heritage, a vineyard and Adiyogi in one scenic drive", color: "#0EA5E9", budget: "2,700-4,200 for 2 people", duration: "Full-day", vibe: "Nature & Outdoors", proximity: "Outskirts / Road Trip", stops: [
       { time: "5:00 AM", place: "Leave Bangalore", type: "Departure", note: "Start early to reach Nandi Hills before sunrise", cost: "Free" },
       { time: "6:00-8:30 AM", place: "Nandi Hills", type: "Nature", note: "Sunrise point, Tipu's Drop, Amrita Sarovar, viewpoints and morning photography. 2-2.5 hours", cost: "Free" },
       { time: "8:45 AM", place: "Bhoga Nandeeshwara Temple", type: "Heritage", note: "1,000-year-old Shiva temple with ancient stone carvings, temple pond and Dravidian architecture. 45-60 min", cost: "Free" },
@@ -61,7 +64,7 @@ export const cityPlans = {
       { time: "5:00-7:00 PM", place: "Adiyogi", type: "Spiritual", note: "112-ft Adiyogi statue, meditation spaces, sunset views and the evening Light & Sound Show", cost: "Free" },
       { time: "8:00-9:30 PM", place: "Return to Bangalore", type: "Evening", note: "Drive back, reaching Bangalore by 9:30 PM", cost: "Fuel & parking ~1,100" },
     ]},
-    { id: "blr-j", title: "Chunchi Falls, Sangama & Mekedatu Adventure", emoji: "🌊", tagline: "Waterfalls, a river confluence and dramatic gorge views along a scenic drive", color: "#0891B2", budget: "3,500-4,500 for 2 people", stops: [
+    { id: "blr-j", title: "Chunchi Falls, Sangama & Mekedatu Adventure", emoji: "🌊", tagline: "Waterfalls, a river confluence and dramatic gorge views along a scenic drive", color: "#0891B2", budget: "3,500-4,500 for 2 people", duration: "Full-day", vibe: "Nature & Outdoors", proximity: "Outskirts / Road Trip", stops: [
       { time: "6:00 AM", place: "Leave Bangalore", type: "Departure", note: "Drive towards Kanakapura, avoiding city traffic", cost: "Free" },
       { time: "7:30 AM", place: "Local restaurant, Kanakapura", type: "Breakfast", note: "Masala dosa, thatte idli, vada, kesari bath and filter coffee", cost: "300-500 for 2" },
       { time: "9:00-10:30 AM", place: "Chunchi Falls", type: "Nature", note: "Waterfall surrounded by rocky cliffs and greenery. Walk to the viewpoint and relax on the rocks. 1-1.5 hours", cost: "Free" },
@@ -74,7 +77,7 @@ export const cityPlans = {
       { time: "7:30 PM", place: "The Fisherman's Wharf / Rasta Cafe", type: "Dinner", note: "Wood-fired pizza, burgers, pasta and sizzlers", cost: "900-1,200 for 2" },
       { time: "9:00 PM", place: "Reach Bangalore", type: "Evening", note: "Arrive home after a full day of nature and light adventure", cost: "Fuel & parking ~1,400" },
     ]},
-    { id: "blr-k", title: "Hidden Hills of Tumakuru", emoji: "🌿", tagline: "Forest walks, ancient temples and scenic hilltops for a peaceful countryside escape", color: "#65A30D", budget: "3,000-4,000 for 2 people", stops: [
+    { id: "blr-k", title: "Hidden Hills of Tumakuru", emoji: "🌿", tagline: "Forest walks, ancient temples and scenic hilltops for a peaceful countryside escape", color: "#65A30D", budget: "3,000-4,000 for 2 people", duration: "Full-day", vibe: "Nature & Outdoors", proximity: "Outskirts / Road Trip", stops: [
       { time: "6:00 AM", place: "Leave Bangalore", type: "Departure", note: "Early morning drive on NH-48 towards Devarayanadurga", cost: "Free" },
       { time: "7:45 AM", place: "Namada Chilume & Deer Park", type: "Nature", note: "Spot deer, walk the forest trail, visit the natural spring and capture the morning light. 1 hour", cost: "Free" },
       { time: "9:00 AM", place: "Bhoga Narasimha Temple", type: "Heritage", note: "Calm, less-crowded temple with ancient stone carvings. 30-45 min", cost: "Free" },
@@ -86,7 +89,7 @@ export const cityPlans = {
       { time: "7:00 PM", place: "Ghar Ka Khana by Farmveda", type: "Dinner", note: "North Karnataka meals, chapati & curry, paneer dishes and fresh lime soda", cost: "900 for 2" },
       { time: "8:00-9:30 PM", place: "Return to Bangalore", type: "Evening", note: "Drive back, reaching home by 9:30 PM", cost: "Fuel & parking ~1,200" },
     ]},
-    { id: "blr-l", title: "Nandi Hills to Lepakshi Escape", emoji: "🏛️", tagline: "Sunrise at Nandi Hills, temple heritage and Andhra flavours before ending at Adiyogi", color: "#7C3AED", budget: "3,000-3,500 for 2 people", stops: [
+    { id: "blr-l", title: "Nandi Hills to Lepakshi Escape", emoji: "🏛️", tagline: "Sunrise at Nandi Hills, temple heritage and Andhra flavours before ending at Adiyogi", color: "#7C3AED", budget: "3,000-3,500 for 2 people", duration: "Full-day", vibe: "Heritage & Culture", proximity: "Outskirts / Road Trip", stops: [
       { time: "5:00 AM", place: "Leave Bangalore", type: "Departure", note: "Start before dawn for one of Karnataka's most beautiful sunrises", cost: "Free" },
       { time: "6:00-8:00 AM", place: "Sunrise at Nandi Hills", type: "Nature", note: "Watch the sunrise, visit Tipu's Drop and explore Amrita Sarovar. 2 hours", cost: "Free" },
       { time: "8:30 AM", place: "Bhoga Nandeeshwara Temple", type: "Heritage", note: "9th-century temple with Dravidian architecture, stone carvings and a peaceful pond. 45-60 min", cost: "Free" },
@@ -97,7 +100,7 @@ export const cityPlans = {
       { time: "6:30 PM", place: "Light & Sound Show", type: "Experiences", note: "Evening projection show illuminating the Adiyogi statue with music and storytelling", cost: "Free" },
       { time: "7:30-9:00 PM", place: "Return to Bangalore", type: "Evening", note: "Relaxed drive back home, arriving by 8:30-9:00 PM", cost: "Fuel & parking ~1,300" },
     ]},
-    { id: "blr-m", title: "Paddle • Pray • Play", emoji: "🚣", tagline: "Sunrise kayaking, a hidden temple, bowling and a sweet ending, all around Hoskote", color: "#0D9488", budget: "3,800-4,800 for 2 people", stops: [
+    { id: "blr-m", title: "Paddle • Pray • Play", emoji: "🚣", tagline: "Sunrise kayaking, a hidden temple, bowling and a sweet ending, all around Hoskote", color: "#0D9488", budget: "3,800-4,800 for 2 people", duration: "Full-day", vibe: "Wildlife & Adventure", proximity: "Outskirts / Road Trip", stops: [
       { time: "5:30 AM", place: "Leave Bangalore", type: "Departure", note: "Peaceful sunrise drive towards Hoskote", cost: "Free" },
       { time: "6:00-8:00 AM", place: "Bangalore Kayak Club", type: "Adventure", note: "Sunrise kayaking, calm-water paddling, bird watching and sunrise photography", cost: "1,000 for 2" },
       { time: "8:30 AM", place: "Sri Asha Tiffins, Hoskote", type: "Breakfast", note: "Thatte idli, benne dosa, vada and filter coffee", cost: "350-500 for 2" },

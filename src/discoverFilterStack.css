@@ -1,0 +1,47 @@
+/* Stacked-layer hover effect for the "Where do you want to go?" category
+   filter chips in Discover/Spin. Adapted from a skewed-diamond icon-stack
+   effect into a fanning glow behind each pill button — scoped under
+   .filterStackWrap so it can't leak onto other ul/li/span elements. */
+
+.filterStackWrap {
+  position: relative;
+  display: inline-block;
+}
+
+.filterStackLayer {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: var(--stack-color, #06b6d4);
+  opacity: 0;
+  transform: translate(0, 0);
+  transition: transform 0.35s ease, opacity 0.35s ease;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.filterStackWrap:hover .filterStackLayer:nth-child(1) {
+  transform: translate(0, 0);
+  opacity: 0.18;
+}
+.filterStackWrap:hover .filterStackLayer:nth-child(2) {
+  transform: translate(4px, -4px);
+  opacity: 0.28;
+}
+.filterStackWrap:hover .filterStackLayer:nth-child(3) {
+  transform: translate(8px, -8px);
+  opacity: 0.38;
+}
+.filterStackWrap:hover .filterStackLayer:nth-child(4) {
+  transform: translate(12px, -12px);
+  opacity: 0.48;
+}
+.filterStackWrap:hover .filterStackLayer:nth-child(5) {
+  transform: translate(16px, -16px);
+  opacity: 0.58;
+}
+
+.filterStackBtn {
+  position: relative;
+  z-index: 1;
+}
