@@ -865,7 +865,7 @@ export default function CityPage() {
               }
 
               .btn-container.find-variant {
-                --btn-color: #84CC16;
+                --btn-color:  #F59E0B;
               }
 
               .btn {
