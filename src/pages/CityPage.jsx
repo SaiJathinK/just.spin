@@ -5,7 +5,7 @@ import { useAuth } from "../context/AuthContext";
 
 import { cityData } from "../data/cityData";
 import { cityPlans } from "../data/cityPlans";
-import { glassCard, blue, cyan, colors, accentGlow } from "../constants/theme";
+import { glassCard, blue, colors, accentGlow } from "../constants/theme";
 
 import WeatherBox from "../components/WeatherBox";
 import WaterButton from "../components/WaterButton";
