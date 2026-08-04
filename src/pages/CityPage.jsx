@@ -865,7 +865,7 @@ export default function CityPage() {
               }
 
               .btn-container.find-variant {
-                --btn-color:  #F59E0B;
+                --btn-color: #84CC16;
               }
 
               .btn {
@@ -1039,7 +1039,7 @@ export default function CityPage() {
                   -webkit-filter: drop-shadow(0 1px 0 #fff6) drop-shadow(0 -1px 0 #0006)
                     drop-shadow(0px 6px 2px #0003);
                   transform: scale(1.05);
-                  color: rgb(0, 0, 0);
+                  color: #0008;
                 }
 
                 --corner-color: #0004;
@@ -1111,7 +1111,7 @@ export default function CityPage() {
                   -webkit-filter: drop-shadow(0 1px 0 #fff6) drop-shadow(0 -1px 0 #0006)
                     drop-shadow(0px 6px 2px #0003);
                   transform: scale(1);
-                  color: rgb(0, 0, 0);
+                  color: #000a;
                 }
                 --corner-color: #0005;
                 --corner-multiplier: 0.95;
@@ -1201,7 +1201,7 @@ export default function CityPage() {
               /* Toggle switch - from Uiverse.io by swift_9148 */
               .spark-switch {
                 display: inline-block;
-                font-size: 20px;
+                font-size: 15px;
                 margin-left: 14px;
               }
               .spark-switch input {
